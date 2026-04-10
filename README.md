@@ -27,22 +27,25 @@ The pipeline assumes a directory structure like:
 ```text
 project_root/
 │
-├── blue/
+├── blue/                         # KCWI-blue data cubes
 │   ├── offset2_a/
 │   ├── offset3_a/
 │   ├── offset2_b/
 │   └── offset3_b/
-
-├── red/
+│
+├── red/                          # KCWI-red data cubes
 │   ├── offset2_a/
 │   ├── offset3_a/
 │   ├── offset2_b/
 │   └── offset3_b/
-
-├── diagnostics/
-
-├── run_wcs.py
-└── master_filelist_blue.txt
+│
+├── diagnostics/                  # output diagnostic plots
+│
+├── master_filelist_blue.txt      # generated list of blue cubes
+├── master_filelist_red.txt       # generated list of red cubes
+├── generate_master_filelists.py  # step 1
+├── run_wcs_one.py                # step 2
+└── run_crop_batch.py             # step 3
 ```
 
 Each field directory contains KCWI data cubes produced by the standard KCWI Data Reduction Pipeline (DRP):
