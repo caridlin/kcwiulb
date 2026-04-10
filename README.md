@@ -213,6 +213,15 @@ Because the WCS solution critically affects all downstream processing, we strong
 
 ---
 
+## License
+
+This project is licensed under the MIT License.
+
+If you use this code in your work, please cite the corresponding paper:
+*A Framework for Ultra--Low Surface Brightness IFU Emission Mapping with KCWI* (submitted to PASP).
+
+---
+
 ## Status
 
 Version 1 includes:
