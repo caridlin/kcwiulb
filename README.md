@@ -6,11 +6,11 @@ A more detailed description of the pipeline is presented in the paper *A Framewo
 
 ---
 
-## Installation
+## 1. Installation
 
 We recommend using a dedicated conda environment.
 
-### Create environment and install package
+### 1.1 Create environment and install package
 
 ```bash
 conda env create -f environment.yml
@@ -20,7 +20,7 @@ pip install -e .
 
 ---
 
-## Intended Folder Structure
+## 2. Intended Folder Structure
 
 The pipeline assumes a directory structure like:
 
@@ -61,7 +61,7 @@ These products therefore serve as the input data for the `kcwiulb` post-processi
 
 ---
 
-## First Step: Generate File Lists
+## 3. First Step: Generate File Lists
 
 The first step in the pipeline is to generate master file lists for each channel based on the directory structure.
 
@@ -115,19 +115,19 @@ These file lists define the input cubes and are used throughout the pipeline.
 
 ---
 
-## Second Step: WCS Correction
+## 4. Second Step: WCS Correction
 
 The next step in the pipeline is to determine the absolute WCS by fitting a reference continuum source in each cube.
 
 Run:
 
 ```bash
-python run_one_wcs.py
+python run_wcs_one.py
 ```
 
 ---
 
-## Example Settings
+### 4.1 Example Settings
 
 Edit the script:
 
@@ -141,7 +141,19 @@ WRITE_OUTPUT = False
 
 ---
 
-## Output
+### 4.2 Output
+
+WCS-corrected cubes:
+
+```text
+{channel}/{field}/{cube_id}_icubes.wc.fits
+```
+
+The corrected cubes are written to the same directory as the original `*_icubes.fits` files, with the `.wc.fits` suffix appended.
+
+---
+
+### 4.3 Diagnostic Plots
 
 Diagnostic plots:
 
@@ -154,23 +166,13 @@ Each diagnostic figure includes:
 - Fitted centroid (global position after alignment)
 - Data / model / residual comparison (fit quality)
 
-WCS-corrected cubes:
-
-```text
-{channel}/{field}/{cube_id}_icubes.wc.fits
-```
-
-The corrected cubes are written to the same directory as the original `*_icubes.fits` files, with the `.wc.fits` suffix appended.
-
-### Example
-
 ![WCS Diagnostic Example](examples/figures/kb240208_00108_wcsfit.png)
 
 This example shows a successful WCS fit, including the selected fitting region, the recovered centroid position, and the quality of the Gaussian model fit.
 
 ---
 
-## Parameter Tuning
+### 4.4 Parameter Tuning
 
 Default parameters are defined in:
 
@@ -189,7 +191,7 @@ OVERRIDES = {
 
 ---
 
-## Workflow
+### 4.5 Workflow
 
 1. Run one cube  
 2. Inspect the diagnostic plot  
@@ -199,7 +201,7 @@ OVERRIDES = {
 
 ---
 
-## Notes
+### 4.6 Notes
 
 - Blue and red channels require separate configurations  
 - Initial guesses may vary significantly between fields  
@@ -210,6 +212,111 @@ This step currently uses continuum sources directly detected in the KCWI cubes f
 In fields without a strong continuum source, a future release will include an alternative method that uses continuum sources identified in the corresponding guider images.
 
 Because the WCS solution critically affects all downstream processing, we strongly recommend running this step **one cube at a time** and verifying that each fit is correct before proceeding.
+
+## 5. Third Step: Cube Cropping
+
+The next step is to crop the data cubes to remove detector edge regions and restrict the wavelength range.
+
+KCWI slices are staggered, and the DRP output cubes contain empty or low-quality regions at the edges. This step removes those regions and ensures a consistent spatial and spectral footprint across all exposures.
+
+Run:
+
+```bash
+python run_crop_batch.py
+```
+
+---
+
+### 5.1 Crop Configuration
+
+Cropping parameters are defined separately for the blue and red channels:
+
+```text
+CROP_FIELDS = {
+    "blue": {
+        "xcrop": (2, 26),
+        "ycrop": (17, 80),
+        "wav_crop": (3652.0, 5675.0),
+        "diag_wav_ranges": [(3700, 3980), (4150, 5200)],
+    },
+    "red": {
+        "xcrop": (2, 26),
+        "ycrop": (12, 78),
+        "wav_crop": (6879.0, 8166.0),
+        "diag_wav_ranges": [(7020, 7030), (7100, 7120)],
+    },
+}
+```
+
+- `xcrop`, `ycrop`: spatial cropping ranges (pixels)  
+- `wav_crop`: continuous wavelength range used for the final cropped cube  
+- `diag_wav_ranges`: wavelength segments used only for diagnostic visualization  
+
+---
+
+### 5.2 Wavelength Selection
+
+The valid wavelength range varies slightly between exposures and is recorded in the FITS headers:
+
+```text
+WAVGOOD0, WAVGOOD1
+```
+
+During execution, the script prints:
+
+```text
+WAVGOOD range: 3650.75 – 5675.93
+```
+
+This provides guidance for selecting `wav_crop`. We recommend choosing values slightly inside this range (rounded to integer Angstroms) to ensure robust trimming.
+
+---
+
+### 5.3 Output
+
+Cropped cubes:
+
+```text
+{channel}/{field}/{cube_id}_icubes.wc.c.fits
+```
+
+These are written alongside the WCS-corrected cubes, with the `.c.fits` suffix.
+
+The cropping is applied consistently to:
+- the science cube (HDU 0)
+- the uncertainty cube (HDU 1), if present
+- any additional 3D extensions with matching shape
+
+---
+
+### 5.4 Diagnostic Plots
+
+For each field, a diagnostic figure is generated:
+
+```text
+diagnostics/{channel}/{field}/{field}_crop.png
+```
+
+Each figure shows:
+- collapsed images of all cubes in the field  
+- wavelength-collapsed signal using `diag_wav_ranges`  
+- consistent color scaling across panels  
+- 4 panels per row  
+
+These plots are useful for verifying:
+- spatial alignment  
+- successful edge trimming  
+- data quality consistency across exposures  
+
+![Crop Diagnostic Example](examples/figures/offset2_a_crop.png)
+
+---
+
+### 5.5 Notes
+
+- Cropping parameters differ between the blue and red channels because they use two different detectors  
+- The same parameters are applied across all subfields within a channel, although they may vary slightly between observing runs if the instrument configuration changes  
+- Always inspect diagnostic plots before proceeding to further processing
 
 ---
 
