@@ -164,7 +164,7 @@ The corrected cubes are written to the same directory as the original `*_icubes.
 
 ### Example
 
-![WCS Diagnostic Example](examples/figures/wcs_diagnostic_example.png)
+![WCS Diagnostic Example](examples/figures/kb240208_00108_wcsfit.png)
 
 This example shows a successful WCS fit, including the selected fitting region, the recovered centroid position, and the quality of the Gaussian model fit.
 
