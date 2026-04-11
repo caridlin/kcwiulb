@@ -16,7 +16,7 @@ During coaddition, interpolation and resampling introduce **correlations between
 - The measured signal-to-noise ratio (SNR) becomes **biased**
 - Downstream analysis (e.g., smoothing, detection thresholds) can be affected
 
-This step measures and calibrates that effect.
+This step measures and calibrates that effect, as noted in previous studies of IFU data reduction and covariance effects (Husemann et al. 2013; Danforth et al. 2016; Law et al. 2016; O’Sullivan et al. 2020).
 
 ---
 
