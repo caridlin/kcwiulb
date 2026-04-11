@@ -83,7 +83,8 @@ WAVELENGTH_RANGES = [
 
 ## Example
 
-![Variance Normalization](../examples/figures/coadd_blue_a_sky.wc_variance_normalization.png)
+<img src="../examples/figures/coadd_blue_a_sky.wc_variance_normalization.png" width="600">
+
 
 ---
 ## Interpretation
