@@ -76,16 +76,13 @@ The sky subtraction workflow differs significantly between the KCWI-blue and KCW
 - [Step 2: WCS Correction](docs/step2_wcs.md)
 - [Step 3: Cube Cropping](docs/step3_crop.md)
 
-- **Step 4b: Blue Sky Subtraction**
-  - [Iter 1](docs/step4b1_sky_blue_iter1.md)
-  - [Iter 2](docs/step4b2_sky_blue_iter2.md)
-
-- [Step 4r: Red Sky Subtraction](docs/step4r_sky_red.md)
+- **Step 4: Sky Subtraction**
+  - Blue: [Iter 1](docs/step4b1_sky_blue_iter1.md), [Iter 2](docs/step4b2_sky_blue_iter2.md)
+  - Red: [Sky Subtraction](docs/step4r_sky_red.md)
 
 - **Step 5: Coadd**
-  - [Blue](docs/step5_coadd_blue.md)
-  - [Red](docs/step5_coadd_red.md)  
-  ↳ *(Optional but highly recommended)*: [Covariance Test](docs/covariance_test.md)
+  - [Blue](docs/step5_coadd_blue.md), [Red](docs/step5_coadd_red.md)  
+  ↳ *(Optional)*: [Covariance Test](docs/covariance_test.md)
 
 - [Step 7: Adaptive Smoothing](docs/step7_ads.md)
 
