@@ -347,7 +347,6 @@ sky_map_blue_iter1.txt
 Each entry specifies:
 
 ```text
-
 science | sky1 | sky2
 ```
 
