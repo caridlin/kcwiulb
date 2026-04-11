@@ -33,7 +33,7 @@ See: [docs/installation.md](docs/installation.md)
 - [Step 3: Cube Cropping](docs/step3_crop.md)
 - [Step 4: Sky Subtraction (Iter 1)](docs/step4_sky_blue_iter1.md)
 - [Step 5: Sky Subtraction (Iter 2)](docs/step5_sky_blue_iter2.md)
-- [Step 6: Coadd](docs/step6_coadd.md)
+- [Step 6: Coadd](docs/step6_coadd_blue.md)
 - [Step 7: Adaptive Signal Extraction](docs/step7_ads.md)
 
 
