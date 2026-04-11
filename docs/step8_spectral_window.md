@@ -58,7 +58,7 @@ PRODUCT = "sky"
 
 LABEL = "oii"   # e.g., "ha", "oii", "oiii"
 
-WAVELENGTH_MIN = 4100 # Redshifter Oii
+WAVELENGTH_MIN = 4100  # redshifted [O II] λλ3727,3729 (z ≈ 0.096)
 WAVELENGTH_MAX = 4300
 ```
 
