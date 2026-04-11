@@ -88,11 +88,12 @@ The sky subtraction workflow differs significantly between the KCWI-blue and KCW
 
 - [Step 7: Variance Normalization](docs/step7_variance_normalization.md)
 
-*Example Analysis Flow*
+**Example Analysis Flow**
 
 - [Step 8: Spectral Window Selection](docs/step8_spectral_window.md)
 - [Step 9: Low-Order Continuum Subtraction](docs/step9_continuum_subtraction.md)
-- [Step 9: Adaptive Smoothing](docs/step7_ads.md)
+  ↳ *(Optional but highly recommended)*: [Interactive Viewer](docs/interactive_viewer.md)
+- [Step 10: Adaptive Smoothing](docs/step7_ads.md)
 
 ---
 
