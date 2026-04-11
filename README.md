@@ -362,7 +362,6 @@ Users are encouraged to review and edit this file if needed before proceeding.
 Run the batch sky subtraction:
 
 ```text
-
 python run_sky_blue_iter1.py
 ```
 
