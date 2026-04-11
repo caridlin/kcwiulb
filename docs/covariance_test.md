@@ -29,7 +29,7 @@ We compare two estimates of noise:
 
 We compute the ratio:
 
-$\sigma_{\mathrm{measured}} / \sigma_{\mathrm{nocov}}$
+$$\sigma_{\mathrm{measured}} / \sigma_{\mathrm{nocov}}$$
 
 as a function of spatial binning size.
 
@@ -41,7 +41,7 @@ as a function of spatial binning size.
 
    The cube is rebinned using kernel sizes:
 
-$N = 1 \times 1,\ 2 \times 2,\ \ldots,\ 11 \times 11$
+$$N = 1 \times 1,\ 2 \times 2,\ \ldots,\ 11 \times 11$$
 
 2. **Wavelength selection**
 
@@ -62,16 +62,15 @@ $N = 1 \times 1,\ 2 \times 2,\ \ldots,\ 11 \times 11$
 
    For each pixel:
 
-$\frac{\sigma_{\mathrm{measured}}}{\sigma_{\mathrm{nocov}}}
-=
-\frac{\sqrt{\mathrm{Var}_{\mathrm{full}}}}{\sqrt{\mathrm{Var}_{\mathrm{diag}}}}$
+$$\frac{\sigma_{\mathrm{measured}}}{\sigma_{\mathrm{nocov}}}
+= \frac{\sqrt{\mathrm{Var}_{\mathrm{full}}}}{\sqrt{\mathrm{Var}_{\mathrm{diag}}}}$$
 
 6. **Model fitting**
 
    The noise scaling is modeled as:
 
-$\frac{\sigma_{\mathrm{measured}}}{\sigma_{\mathrm{nocov}}}
-= \mathrm{norm}\,(1 + \alpha \log N_{\mathrm{kernel}})$
+$$\frac{\sigma_{\mathrm{measured}}}{\sigma_{\mathrm{nocov}}}
+= \mathrm{norm}\,(1 + \alpha \log N_{\mathrm{kernel}})$$
 
    with a plateau beyond a threshold kernel size.
 
