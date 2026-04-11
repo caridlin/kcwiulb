@@ -84,6 +84,9 @@ The sky subtraction workflow differs significantly between the KCWI-blue and KCW
   - [Blue](docs/step5_coadd_blue.md), [Red](docs/step5_coadd_red.md)  
   ↳ *(Optional but highly recommended)*: [Covariance Test](docs/covariance_test.md)
 
+- **Step 6: Coadd WCS Correction**
+  - [WCS Correction (Coadd)](docs/step6_coadd_wcs.md)
+
 - [Step 7: Adaptive Smoothing](docs/step7_ads.md)
 
 ---
