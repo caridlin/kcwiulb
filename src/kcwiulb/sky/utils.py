@@ -6,6 +6,7 @@ import numpy as np
 import numpy.ma as ma
 from astropy.io import fits
 from astropy.stats import sigma_clip
+from scipy import ndimage
 
 from kcwiulb.wcs import wavelength_to_index, index_to_wavelength
 
@@ -154,6 +155,40 @@ def masked_median_spectrum(
         np.nansum(np.square(um.filled(np.nan)), axis=(1, 2)) * np.pi / (2 * (n_used - 1))
     )
     return spec, spec_unc
+
+
+def weighted_quantile(values, quantiles=0.5, sample_weight=None):
+    values = np.array(values).flatten()
+    if sample_weight is None:
+        sample_weight = np.ones_like(values)
+    sample_weight = np.array(sample_weight).flatten()
+
+    sorter = np.argsort(values)
+    values = values[sorter]
+    sample_weight = sample_weight[sorter]
+
+    weighted_quantiles = np.cumsum(sample_weight) - 0.5 * sample_weight
+    weighted_quantiles /= np.sum(sample_weight)
+
+    return np.interp(quantiles, weighted_quantiles, values)
+
+
+def weighted_median_filter_1d(
+    spec: np.ndarray,
+    spec_unc: np.ndarray,
+    width: int = 125,
+    quantile: float = 0.3,
+) -> np.ndarray:
+    return ndimage.generic_filter(
+        spec,
+        weighted_quantile,
+        size=width,
+        mode="reflect",
+        extra_keywords={
+            "quantiles": quantile,
+            "sample_weight": np.abs(spec_unc),
+        },
+    )
 
 
 def write_cube(
