@@ -40,7 +40,7 @@ The kcwiulb pipeline processes KCWI data cubes through the following stages:
 
 The sky subtraction workflow differs significantly between the KCWI-blue and KCWI-red channels:
 
-![Sky Subtraction Workflow](../examples/figures/pipeline_flowchart.png)
+![Sky Subtraction Workflow](examples/figures/pipeline_flowchart.png)
 
 **Blue Channel**
 
