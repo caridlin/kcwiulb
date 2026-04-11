@@ -16,7 +16,7 @@ Interpolation and resampling during coaddition introduce **correlations between 
 - The measured SNR becomes **artificially inflated**
 - Downstream analyses (e.g., detection thresholds, smoothing) can be biased
 
-Modern IFU pipelines explicitly account for these effects (e.g., Husemann et al. 2013; Danforth et al. 2016; Law et al. 2016; O’Sullivan et al. 2020). This step provides a **direct empirical test** that the propagated covariance correctly captures these correlations.
+Modern IFU pipelines typically treat covariance through empirical calibration or approximate noise models (e.g., Husemann et al. 2013; Danforth et al. 2016; Law et al. 2016; O’Sullivan et al. 2020). In contrast, our coaddition propagates the full covariance matrix. This test therefore serves as a **direct validation** that the resulting noise model is statistically correct.
 
 ---
 
@@ -107,10 +107,14 @@ This is useful for characterizing noise behavior but is **not required** for val
 ## Interpretation
 
 - If full covariance gives σ ≈ 1 → ✅ noise is correctly propagated  
-- If diagonal-only gives σ < 1 → expected behavior  
+- If diagonal-only gives σ < 1 → expected underestimation of noise  
 - If full covariance deviates from σ ≈ 1 → ❗ potential issue in coaddition  
 
 A smooth increase in the noise ratio with kernel size indicates well-behaved covariance structure.
+
+For a given instrument and coaddition strategy (e.g., KCWI sampling and interpolation scheme), the covariance scaling curve is expected to be largely **independent of the specific dataset**. Instead, it reflects the intrinsic correlation length set by the detector sampling and resampling/interpolation during coaddition.
+
+Significant deviations between datasets may therefore indicate inconsistencies in the reduction or coaddition process rather than astrophysical differences.
 
 ---
 
@@ -135,6 +139,8 @@ This test is recommended when:
 
 ## Summary
 
-This step provides a **direct validation of noise propagation** in the coadded data.
+This step provides a **direct validation of noise propagation** by demonstrating that the SNR distribution is statistically consistent (σ ≈ 1) when full covariance is included.
 
-It ensures that spatial covariance is correctly accounted for and that SNR-based measurements are statistically reliable. The covariance scaling curve offers an additional quantitative diagnostic but is secondary to the SNR validation.
+It confirms that correlated noise introduced during coaddition is correctly handled, ensuring reliable SNR-based measurements.
+
+The covariance scaling curve serves as a secondary diagnostic to characterize the impact of covariance on noise.
