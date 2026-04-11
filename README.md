@@ -86,6 +86,8 @@ The sky subtraction workflow differs significantly between the KCWI-blue and KCW
 
 - [Step 6: WCS Correction (Coadd)](docs/step6_coadd_wcs.md)
 
+- [Step 7: Variance Normalization](docs/step7_variance_normalization.md)
+
 - [Step 7: Adaptive Smoothing](docs/step7_ads.md)
 
 ---
