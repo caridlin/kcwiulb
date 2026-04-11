@@ -91,6 +91,7 @@ The sky subtraction workflow differs significantly between the KCWI-blue and KCW
 *Example Analysis Flow*
 
 - [Step 8: Spectral Window Selection](docs/step8_spectral_window.md)
+- [Step 9: Low-Order Continuum Subtraction](docs/step9_continuum_subtraction.md)
 - [Step 9: Adaptive Smoothing](docs/step7_ads.md)
 
 ---
