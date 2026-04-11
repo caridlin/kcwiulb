@@ -49,7 +49,7 @@ Each diagnostic figure includes:
 - Fitted centroid (global position after alignment)
 - Data / model / residual comparison (fit quality)
 
-![WCS Diagnostic Example](examples/figures/kb240208_00108_wcsfit.png)
+![WCS Diagnostic Example](../examples/figures/kb240208_00108_wcsfit.png)
 
 This example shows a successful WCS fit, including the selected fitting region, the recovered centroid position, and the quality of the Gaussian model fit.
 

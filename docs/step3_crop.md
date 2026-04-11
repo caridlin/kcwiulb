@@ -93,7 +93,7 @@ These plots are useful for verifying:
 - successful edge trimming  
 - data quality consistency across exposures  
 
-![Crop Diagnostic Example](examples/figures/offset2_a_crop.png)
+![Crop Diagnostic Example](../examples/figures/offset2_a_crop.png)
 
 ---
 
