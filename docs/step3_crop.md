@@ -1,4 +1,4 @@
-## Third Step: Cube Cropping
+## Cube Cropping
 
 The next step is to crop the data cubes to remove detector edge regions and restrict the wavelength range.
 

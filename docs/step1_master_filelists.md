@@ -1,4 +1,4 @@
-## First Step: Generate File Lists
+## Generate File Lists
 
 The first step in the pipeline is to generate master file lists for each channel based on the directory structure.
 

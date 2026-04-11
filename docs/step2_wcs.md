@@ -1,4 +1,4 @@
-## Second Step: WCS Correction
+## WCS Correction
 
 The next step in the pipeline is to determine the absolute WCS by fitting a reference continuum source in each cube.
 

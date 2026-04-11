@@ -1,5 +1,5 @@
 
-## Fourth Step: Sky Subtraction (Blue, Iteration 2)
+## Sky Subtraction (Blue, Iteration 2)
 
 
 The second iteration of sky subtraction refines the results from Iteration 1 using a multi-sky residual modeling approach. This step is designed to further suppress systematic sky residuals and improve performance for ultra–low surface brightness emission.

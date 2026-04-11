@@ -1,4 +1,4 @@
-## Fourth Step: Sky Subtraction (Blue, Iteration 1)
+## Sky Subtraction (Blue, Iteration 1)
 
 The next step is to perform sky subtraction using a two-sky fitting model optimized for ultra–low surface brightness emission.
 
