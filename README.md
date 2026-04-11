@@ -54,18 +54,18 @@ The sky subtraction workflow differs significantly between the KCWI-blue and KCW
    - multiple iterations to decouple sky residuals and CR contamination  
 
 ### Coaddition
-6. Coaddition (flux, variance, covariance products)  
+7. Coaddition (flux, variance, covariance products)  
 
 ### Post-processing / Analysis
-7. WCS refinement (optional, on coadds)  
-8. Spectral window selection (e.g., Hα region)  
-9. Sky-line masking  
-10. Stellar continuum / absorption removal  
-11. PSF subtraction  
-12. Background subtraction  
-13. Source masking  
-14. Adaptive smoothing / signal extraction  
-15. Post-processing (e.g., denoising)
+8. WCS refinement (optional, on coadds)  
+9. Spectral window selection (e.g., Hα region)  
+10. Sky-line masking  
+11. Stellar continuum / absorption removal  
+12. PSF subtraction  
+13. Background subtraction  
+14. Source masking  
+15. Adaptive smoothing / signal extraction  
+16. Post-processing (e.g., denoising)
 
 ---
 
@@ -78,7 +78,7 @@ The sky subtraction workflow differs significantly between the KCWI-blue and KCW
 - [Step 4: Sky Subtraction (Iter 1)](docs/step4_sky_blue_iter1.md)
 - [Step 5: Sky Subtraction (Iter 2)](docs/step5_sky_blue_iter2.md)
 - [Step 6: Coadd](docs/step6_coadd_blue.md)
-- [Step 7: Adaptive Signal Extraction](docs/step7_ads.md)
+- [Step 7: Adaptive Smoothing](docs/step7_ads.md)
 
 
 ## License
