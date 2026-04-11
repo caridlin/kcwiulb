@@ -16,7 +16,7 @@ Interpolation and resampling during coaddition introduce **correlations between 
 - The measured SNR becomes **artificially inflated**
 - Downstream analyses (e.g., detection thresholds, smoothing) can be biased
 
-Modern IFU pipelines explicitly account for these effects (e.g., Husemann et al. 2013; Law et al. 2016). This step provides a **direct empirical test** that the propagated covariance correctly captures these correlations.
+Modern IFU pipelines explicitly account for these effects (e.g., Husemann et al. 2013; Danforth et al. 2016; Law et al. 2016; O’Sullivan et al. 2020). This step provides a **direct empirical test** that the propagated covariance correctly captures these correlations.
 
 ---
 
