@@ -77,8 +77,8 @@ The sky subtraction workflow differs significantly between the KCWI-blue and KCW
 - [Step 3: Cube Cropping](docs/step3_crop.md)
 
 - **Step 4: Sky Subtraction**
-  - Blue: [Iter 1](docs/step4b1_sky_blue_iter1.md), [Iter 2](docs/step4b2_sky_blue_iter2.md)
-  - Red: [Sky Subtraction](docs/step4r_sky_red.md)
+  - Blue: [Iter 1](docs/step4_sky_blue_iter1.md), [Iter 2](docs/step4_sky_blue_iter2.md)
+  - Red: [Sky Subtraction](docs/step4_sky_red.md)
 
 - **Step 5: Coadd**
   - [Blue](docs/step5_coadd_blue.md), [Red](docs/step5_coadd_red.md)  
