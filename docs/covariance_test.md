@@ -1,37 +1,37 @@
-# Covariance Calibration
+# Covariance Test
 
 ## Overview
 
-This step quantifies the impact of spatial covariance introduced during the coaddition process.
+This step validates the noise properties of the coadded cube by testing whether spatial covariance has been correctly propagated.
 
-Although optional, it is **highly recommended** as a validation step to ensure that the noise properties of the coadded data are well understood and properly characterized.
+Although optional, it is **highly recommended** as a diagnostic step to verify that the signal-to-noise ratio (SNR) is properly normalized and that the coaddition pipeline produces statistically consistent results.
 
 ---
 
 ## Motivation
 
-During coaddition, interpolation and resampling introduce **correlations between neighboring pixels**. As a result:
+Interpolation and resampling during coaddition introduce **correlations between neighboring pixels**. If these correlations are not properly accounted for:
 
 - The diagonal variance alone **underestimates the true noise**
-- The measured signal-to-noise ratio (SNR) becomes **biased**
-- Downstream analysis (e.g., smoothing, detection thresholds) can be affected
+- The measured SNR becomes **artificially inflated**
+- Downstream analyses (e.g., detection thresholds, smoothing) can be biased
 
-This step measures and calibrates that effect, as noted in previous studies of IFU data reduction and covariance effects (Husemann et al. 2013; Danforth et al. 2016; Law et al. 2016; O’Sullivan et al. 2020).
+Modern IFU pipelines explicitly account for these effects (e.g., Husemann et al. 2013; Law et al. 2016). This step provides a **direct empirical test** that the propagated covariance correctly captures these correlations.
 
 ---
 
-## Method
+## Principle
 
-We compare two estimates of noise:
+For a correctly propagated noise model, the SNR distribution in blank sky regions should follow:
 
-- **With covariance**: full variance including covariance terms  
-- **Diagonal only**: variance assuming no pixel correlations  
+$\sigma \approx 1$
 
-We compute the ratio:
+We compare two cases:
 
-$$\sigma_{\mathrm{measured}} / \sigma_{\mathrm{nocov}}$$
+- **Full covariance** → expected to be correct  
+- **Diagonal-only variance** → expected to underestimate noise  
 
-as a function of spatial binning size.
+The difference between the two provides a direct validation of covariance handling.
 
 ---
 
@@ -39,40 +39,24 @@ as a function of spatial binning size.
 
 1. **Spatial rebinning**
 
-   The cube is rebinned using kernel sizes:
+   The cube is rebinned with increasing kernel sizes:
 
-$$N = 1 \times 1,\ 2 \times 2,\ \ldots,\ 11 \times 11$$
+   N = 1×1, 2×2, ..., 11×11
 
 2. **Wavelength selection**
 
-   Only selected wavelength ranges are used to avoid strong emission lines.
+   Selected wavelength ranges are used to avoid strong emission lines.
 
 3. **Blank-sky masking**
 
-   A sigma-clipped collapsed image is used to identify and mask non-background regions.
+   A sigma-clipped collapsed image identifies background-dominated regions.
 
 4. **SNR measurement**
 
    For each kernel size:
    - Compute SNR using full covariance
    - Compute SNR using diagonal-only variance
-   - Fit a Gaussian to the SNR distribution
-
-5. **Noise ratio computation**
-
-   For each pixel:
-
-$$\frac{\sigma_{\mathrm{measured}}}{\sigma_{\mathrm{nocov}}}
-= \frac{\sqrt{\mathrm{Var}_{\mathrm{full}}}}{\sqrt{\mathrm{Var}_{\mathrm{diag}}}}$$
-
-6. **Model fitting**
-
-   The noise scaling is modeled as:
-
-$$\frac{\sigma_{\mathrm{measured}}}{\sigma_{\mathrm{nocov}}}
-= \mathrm{norm}\,(1 + \alpha \log N_{\mathrm{kernel}})$$
-
-   with a plateau beyond a threshold kernel size.
+   - Fit a Gaussian to each SNR distribution
 
 ---
 
@@ -80,28 +64,37 @@ $$\frac{\sigma_{\mathrm{measured}}}{\sigma_{\mathrm{nocov}}}
 
 The pipeline produces a PDF containing:
 
-### 1. SNR Distributions
+### 1. SNR Distributions (Primary Test)
 
 For each kernel size:
 - Left: diagonal-only SNR  
 - Right: full covariance SNR  
 
-These should be approximately Gaussian with:
+Expected behavior:
 
-σ ≈ 1
+- **Full covariance** → Gaussian with σ ≈ 1  
+- **Diagonal-only** → σ < 1 (noise underestimated)
 
-for a well-behaved noise model.
+This directly demonstrates whether covariance has been correctly propagated.
 
 ---
 
-### 2. Covariance Calibration Curve
+### 2. Covariance Scaling (Secondary Diagnostic)
 
-- Black points: individual pixel measurements  
-- Black line: mean trend  
-- Grey region: ±1σ scatter  
-- Red curve: fitted model  
+We also compute the ratio:
 
-This curve quantifies how much the noise is boosted by covariance.
+$\frac{\sigma_{\mathrm{measured}}}{\sigma_{\mathrm{nocov}}}$
+
+and measure how it evolves with kernel size.
+
+This provides a **quantitative description** of how covariance inflates the noise.
+
+A simple model is fit:
+
+$\frac{\sigma_{\mathrm{measured}}}{\sigma_{\mathrm{nocov}}}
+= \mathrm{norm}\,(1 + \alpha \log N_{\mathrm{kernel}})$
+
+This is useful for characterizing noise behavior but is **not required** for validation.
 
 ---
 
@@ -113,33 +106,35 @@ This curve quantifies how much the noise is boosted by covariance.
 
 ## Interpretation
 
-- If the ratio is close to 1 → covariance is negligible  
-- If the ratio increases with kernel size → covariance is significant  
-- A smooth logarithmic trend indicates a **well-behaved coadd**
+- If full covariance gives σ ≈ 1 → ✅ noise is correctly propagated  
+- If diagonal-only gives σ < 1 → expected behavior  
+- If full covariance deviates from σ ≈ 1 → ❗ potential issue in coaddition  
+
+A smooth increase in the noise ratio with kernel size indicates well-behaved covariance structure.
 
 ---
 
 ## Notes
 
 - Only **one off-diagonal covariance band** is stored for efficiency  
-- The full covariance is reconstructed assuming symmetry  
-- Off-diagonal terms are counted twice during rebinning
+- Full covariance is reconstructed assuming symmetry  
+- Off-diagonal terms are counted twice during rebinning  
 
 ---
 
 ## When to Use
 
-This step is recommended when:
+This test is recommended when:
 
 - Validating a new coaddition pipeline  
-- Comparing different reduction strategies  
+- Debugging noise properties  
+- Comparing reduction strategies  
 - Preparing results for publication  
-- Performing quantitative SNR-based analysis  
 
 ---
 
 ## Summary
 
-Covariance calibration provides a **quantitative validation of noise properties** in the coadded data and ensures that measurements based on SNR are reliable.
+This step provides a **direct validation of noise propagation** in the coadded data.
 
-It is strongly recommended for scientific analyses involving faint signals.
+It ensures that spatial covariance is correctly accounted for and that SNR-based measurements are statistically reliable. The covariance scaling curve offers an additional quantitative diagnostic but is secondary to the SNR validation.
