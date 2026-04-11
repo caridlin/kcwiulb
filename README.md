@@ -1,27 +1,69 @@
 # kcwiulb
 
-A Python package for ultra-low surface brightness IFU emission mapping with KCWI.
+A Python package for ultra–low surface brightness IFU emission mapping with KCWI, developed during my PhD.
 
-A detailed description is presented in:
+This pipeline has been used in several published works, including:
+
+- Extensive diffuse Lyman-alpha emission correlated with cosmic structure  
+  D. C. Martin et al. 2023, *Nature Astronomy*, 7, 1390  
+
+- Kinematically Complex Circumgalactic Gas Around a Low-mass Galaxy: Filamentary Inflow and Counterrotation in J0910b  
+  Z. Lin et al. 2025, *The Astrophysical Journal*, 995, 12  
+
+A detailed description of the methodology is presented in  
 *A Framework for Ultra--Low Surface Brightness IFU Emission Mapping with KCWI* (submitted to PASP).
 
 ---
 
 ## Installation
 
-See: [docs/installation.md](docs/installation.md)
+We recommend using a dedicated conda environment.
+
+```bash
+conda env create -f environment.yml
+conda activate kcwiulb
+pip install -e .
+```
 
 ---
 
 ## Pipeline Overview
 
+The kcwiulb pipeline processes KCWI data cubes through the following stages:
+
+### Pre-processing
 1. Generate file lists  
 2. WCS correction  
 3. Cube cropping  
-4. Sky subtraction (blue, iter1)  
-5. Sky subtraction (blue, iter2)  
-6. Coaddition  
-7. Adaptive signal extraction  
+
+### Sky Subtraction
+
+The sky subtraction workflow differs significantly between the KCWI-blue and KCWI-red channels:
+
+![Sky Subtraction Workflow](../figures/pipeline_flowchart.png)
+
+**Blue Channel**
+4. Sky subtraction (iteration 1)  
+5. Sky subtraction (iteration 2, multi-sky residual modeling)  
+
+**Red Channel**
+6. Sky subtraction with iterative cosmic-ray (CR) removal  
+   - alternating sky subtraction and CR masking  
+   - multiple iterations to decouple sky residuals and CR contamination  
+
+### Coaddition
+6. Coaddition (flux, variance, covariance products)  
+
+### Post-processing / Analysis
+7. WCS refinement (optional, on coadds)  
+8. Spectral window selection (e.g., Hα region)  
+9. Sky-line masking  
+10. Stellar continuum / absorption removal  
+11. PSF subtraction  
+12. Background subtraction  
+13. Source masking  
+14. Adaptive smoothing / signal extraction  
+15. Post-processing (e.g., denoising)
 
 ---
 
@@ -44,16 +86,6 @@ This project is licensed under the MIT License.
 If you use this code in your work, please cite the corresponding paper:
 *A Framework for Ultra--Low Surface Brightness IFU Emission Mapping with KCWI* (submitted to PASP).
 
----
-
-## Status
-
-Version 1 includes:
-- WCS anchoring with per-cube validation  
-- cube cropping and wavelength trimming  
-- two-stage sky subtraction for KCWI-blue (iter1 and iter2)  
-- covariance-aware coaddition on a common WCS grid  
-- diagnostic visualization at each major processing step  
 
 --- 
 
