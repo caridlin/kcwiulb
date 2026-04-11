@@ -1,4 +1,4 @@
-## Sixth Step: Coaddition (Blue)
+## Fifth Step: Coaddition (Blue)
 
 After sky subtraction, the next step is to coadd the blue-channel data cubes onto a common spatial grid.
 
