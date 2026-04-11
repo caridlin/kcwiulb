@@ -60,6 +60,38 @@ The difference between the two provides a direct validation of covariance handli
 
 ---
 
+## Running the Test
+
+Run:
+
+```text
+python run_covariance_test.py
+```
+
+This script loads the coadded cube, rebins it over a range of kernel sizes, computes SNR distributions with and without covariance, and writes a diagnostic PDF.
+
+
+---
+### Configuration
+
+Key parameters in `run_covariance_test.py`:
+
+```text
+# Output directory
+OUTPUT_DIR = COADD_DIR  # saves results in the coadd folder
+
+# Kernel sizes for spatial rebinning
+KERNEL_SIZES = list(range(1, 4))  # e.g., 1×1 to 3×3
+
+# Wavelength ranges used for SNR calculation (avoid emission lines)
+COLLAPSE_WAVELENGTH_RANGES = [
+    (3700, 3980),
+    (4150, 5200),
+]
+```
+
+---
+
 ## Output
 
 The pipeline produces a PDF containing:
