@@ -40,13 +40,15 @@ The kcwiulb pipeline processes KCWI data cubes through the following stages:
 
 The sky subtraction workflow differs significantly between the KCWI-blue and KCWI-red channels:
 
-![Sky Subtraction Workflow](../figures/pipeline_flowchart.png)
+![Sky Subtraction Workflow](../examples/figures/pipeline_flowchart.png)
 
 **Blue Channel**
+
 4. Sky subtraction (iteration 1)  
 5. Sky subtraction (iteration 2, multi-sky residual modeling)  
 
 **Red Channel**
+
 6. Sky subtraction with iterative cosmic-ray (CR) removal  
    - alternating sky subtraction and CR masking  
    - multiple iterations to decouple sky residuals and CR contamination  
