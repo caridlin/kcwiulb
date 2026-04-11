@@ -92,8 +92,8 @@ coadd_blue_a_sky_cov_data_ha.npy
 
 ---
 
-## Notes
+### Notes
 
-- Users are **strongly recommended** to inspect the output cubes in DS9 (or a similar viewer) to verify that the selected wavelength window correctly captures the target emission line.
+- Users are **strongly recommended** to inspect the output cubes in DS9 (or a similar viewer) to verify that the selected wavelength window correctly captures the full emission-line profile while avoiding strong sky emission features.
 
-- Ensure that the window includes the full line profile while avoiding unnecessary sky-dominated regions.
+- The window should also include some **continuum-dominated sky** on either side of the line to support the next continuum-subtraction step.
