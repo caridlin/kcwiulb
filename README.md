@@ -49,11 +49,35 @@ If you use this code in your work, please cite the corresponding paper:
 ## Status
 
 Version 1 includes:
-- WCS anchoring  
-- single-cube workflow  
-- diagnostic visualization  
+- WCS anchoring with per-cube validation  
+- cube cropping and wavelength trimming  
+- two-stage sky subtraction for KCWI-blue (iter1 and iter2)  
+- covariance-aware coaddition on a common WCS grid  
+- diagnostic visualization at each major processing step  
 
-Future:
-- batch processing  
-- auto quality checks  
-- multi-channel alignment  
+--- 
+
+## Future Development
+
+Several additional methods have already been developed and tested in standalone workflows, and will be incorporated into the pipeline in future releases:
+
+1. **Batch WCS processing**  
+   Batch processing will be implemented for efficiency. However, we strongly recommend inspecting each cube individually, as WCS solutions can vary significantly between exposures.
+
+2. **WCS correction using KCWI guider images**  
+   In fields without strong continuum sources, WCS alignment will be extended to use guider images. This will support both pre- and post-KCWI-red observations, as the KCWI guider systems differ significantly between these configurations.
+
+3. **Residual sky subtraction for nod-and-shuffle data**  
+   Additional refinement of sky subtraction for pre-KCWI-red nod-and-shuffle observations.
+
+4. **Flexible cropping per exposure**  
+   Allow per-cube cropping parameters to account for small shifts in detector alignment between observing runs. In practice, these shifts are typically at the level of ~1 pixel, but accommodating them improves consistency across nights.
+
+5. **Wavelength solution refinement**  
+   The KCWI DRP wavelength solution can exhibit small offsets relative to known sky lines. A correction step will be added during coaddition to improve wavelength calibration.
+
+6. **Alternative coaddition with Monte Carlo error propagation**  
+   An additional coadd mode will be implemented using Monte Carlo error propagation, avoiding explicit covariance matrix construction. This approach is particularly useful when:
+   - wavelength axes differ significantly between cubes  
+   - interpolation effects are complex  
+   - a computationally lighter uncertainty estimate is desired  
