@@ -74,41 +74,33 @@ This will start a local server and automatically open the viewer in a web browse
 
 Before running, users can modify parameters in `run_interactive_viewer.py`:
 
-```
-# =========================
-# Data selection
-# =========================
-CHANNEL = "blue"     # KCWI channel ("blue" or "red")
-GROUP = "a"          # Coadd group (e.g., "a", "b", etc.)
-PRODUCT = "sky"      # Sky subtraction product ("sky" or "sky2")
+```text
+# Data and file selection
+CHANNEL = "blue"     # KCWI channel
+GROUP = "a"          # Coadd group
+PRODUCT = "sky"      # Sky subtraction product
 LABEL = "oii"        # Spectral window label
 
-# =========================
 # Optional comparison panel
-# =========================
 COMPARISON_PATH = FLUX_PATH   # Set to None to disable comparison panel
 
-# =========================
 # Wavelength settings
-# =========================
-COLLAPSE_EXCLUDE = (4240, 4275)   # Wavelength range excluded when collapsing cube
-SPECTRUM_X_RANGE = (4100, 4300)   # Initial wavelength range shown in spectrum panel
+COLLAPSE_EXCLUDE = (4240, 4275)   # Excluded range for collapsed images
+SPECTRUM_X_RANGE = (4100, 4300)   # Initial spectrum display range
 
-# =========================
 # Color scaling
-# =========================
-IMAGE_LOW = -0.001     # Min value for slice image color scale
-IMAGE_HIGH = 0.001     # Max value for slice image color scale
-COLLAPSE_LOW = -0.1    # Min value for collapsed image color scale
-COLLAPSE_HIGH = 0.3    # Max value for collapsed image color scale
+IMAGE_LOW = -0.001
+IMAGE_HIGH = 0.001
+COLLAPSE_LOW = -0.1
+COLLAPSE_HIGH = 0.3
 
-# =========================
 # Layout
-# =========================
-HEIGHT1 = 300   # Height of image panels (width auto-scales with aspect ratio)
-HEIGHT2 = 300   # Height of spectrum panel
-WIDTH2 = 800    # Width of spectrum panel (independent control)
+HEIGHT1 = 300   # Image-panel height
+HEIGHT2 = 300   # Spectrum-panel height
+WIDTH2 = 800    # Spectrum-panel width
 ```
+
+The input file paths for the original, residual, and model cubes are constructed automatically from `CHANNEL`, `GROUP`, `PRODUCT`, and `LABEL`. Alternatively, users can manually specify the file paths if more control is needed.
 
 ---
 
