@@ -1,4 +1,4 @@
-## Interactive KCWI Cube Viewer Documentation
+## Interactive KCWI Cube Viewer
 
 I developed this interactive tool to inspect KCWI data cubes, including original flux, model, and residual (background/continuum-subtracted) cubes. It enables real-time spatial and spectral exploration for validating faint emission features and assessing subtraction quality.
 
