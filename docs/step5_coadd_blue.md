@@ -138,5 +138,7 @@ Example diagnostic:
   - diagnosing edge effects from the coadd footprint  
 
 - Users are encouraged to inspect diagnostic plots before proceeding to signal extraction  
+    - For detailed covariance testing, see the  
+      **[Covariance Test](docs/covariance_test.md)** *(optional but recommended)* developed for this pipeline  
 
 - This step prepares the data for subsequent analysis stages in the pipeline

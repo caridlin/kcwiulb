@@ -77,8 +77,12 @@ LINE_MASK = (4240, 4275)
 - Only low-order polynomials (≤ 2) are used to avoid overfitting  
 - Variance includes continuum-fit uncertainty  
 - Off-diagonal covariance terms are **unchanged** during this step  
-- Users are **strongly recommended** to inspect the outputs in DS9:
+
+- Users are **strongly recommended** to inspect the outputs:
   - verify that the continuum is smooth  
   - confirm that emission lines are preserved  
   - ensure no over-subtraction occurs  
+
+- For more detailed spatial–spectral inspection, see the  
+  **[Interactive Viewer](interactive_viewer.md)** *(optional but highly recommended)* developed for this pipeline  
   

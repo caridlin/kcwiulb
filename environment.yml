@@ -10,6 +10,7 @@ dependencies:
   - pyyaml
   - tqdm
   - shapely
+  - bokeh
   - pip
   - pip:
       - -e .
