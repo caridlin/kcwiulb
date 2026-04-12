@@ -56,6 +56,63 @@ The spectrum panel updates dynamically based on user interaction with the image 
 
 ---
 
+### Running the Interactive Viewer
+
+The viewer is launched using the Bokeh server:
+
+```bash
+bokeh serve --show run_interactive_viewer.py
+```
+
+This will start a local server and automatically open the viewer in a web browser.
+
+⚠️ **Note:** This app requires `bokeh serve` (not `python`) because it depends on a live Bokeh server for interactivity.
+
+---
+
+### Configuration
+
+Before running, users can modify parameters in `run_interactive_viewer.py`:
+
+```
+# =========================
+# Data selection
+# =========================
+CHANNEL = "blue"     # KCWI channel ("blue" or "red")
+GROUP = "a"          # Coadd group (e.g., "a", "b", etc.)
+PRODUCT = "sky"      # Sky subtraction product ("sky" or "sky2")
+LABEL = "oii"        # Spectral window label
+
+# =========================
+# Optional comparison panel
+# =========================
+COMPARISON_PATH = FLUX_PATH   # Set to None to disable comparison panel
+
+# =========================
+# Wavelength settings
+# =========================
+COLLAPSE_EXCLUDE = (4240, 4275)   # Wavelength range excluded when collapsing cube
+SPECTRUM_X_RANGE = (4100, 4300)   # Initial wavelength range shown in spectrum panel
+
+# =========================
+# Color scaling
+# =========================
+IMAGE_LOW = -0.001     # Min value for slice image color scale
+IMAGE_HIGH = 0.001     # Max value for slice image color scale
+COLLAPSE_LOW = -0.1    # Min value for collapsed image color scale
+COLLAPSE_HIGH = 0.3    # Max value for collapsed image color scale
+
+# =========================
+# Layout
+# =========================
+HEIGHT1 = 300   # Height of image panels (width auto-scales with aspect ratio)
+HEIGHT2 = 300   # Height of spectrum panel
+WIDTH2 = 800    # Width of spectrum panel (independent control)
+```
+
+---
+
+
 ### Typical Use Cases
 
 **(1) Continuum subtraction at the target**  
