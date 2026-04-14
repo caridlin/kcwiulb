@@ -27,6 +27,35 @@ pip install -e .
 
 ---
 
+## Repository Structure and Usage
+
+The pipeline is designed to separate stable library code from user-specific workflows.
+
+The package is organized into:
+
+- `src/kcwiulb/` → core pipeline implementation (library code)  
+- `scripts/` → example wrapper scripts for each processing step  
+
+### How to use
+
+The recommended workflow is:
+
+1. Copy a script from `scripts/` into your data directory  
+2. Modify file paths and parameters  
+3. Run locally, e.g.:
+
+```bash
+python run_ads.py
+```
+
+These scripts are lightweight templates designed to be adapted to each dataset.
+
+For more details, see:
+- [User Data Directory Structure](docs/user_data_directory_structure.md)
+- [Repository Structure](docs/repository_structure.md)
+
+---
+
 ## Pipeline Overview
 
 The kcwiulb pipeline processes KCWI data cubes through the following stages:
@@ -36,42 +65,47 @@ The kcwiulb pipeline processes KCWI data cubes through the following stages:
 2. WCS correction  
 3. Cube cropping  
 
-### Sky Subtraction
+---
 
-The sky subtraction workflow differs significantly between the KCWI-blue and KCWI-red channels:
+### Sky Subtraction (Step 4)
+
+Different workflows are used depending on the observing mode and channel:
 
 ![Sky Subtraction Workflow](examples/figures/pipeline_flowchart.png)
 
-**Blue Channel**
+- **Blue channel**
+  - Iteration 1  
+  - Iteration 2 (multi-sky residual modeling)  
 
-4. Sky subtraction (iteration 1)  
-5. Sky subtraction (iteration 2, multi-sky residual modeling)  
+- **Red channel**
+  - Iterative sky subtraction with cosmic-ray (CR) removal  
+  - Alternating sky subtraction and CR masking  
 
-**Red Channel**
+- **Nod-and-shuffle data**
+  - Dedicated sky subtraction workflow (under active development)
 
-6. Sky subtraction with iterative cosmic-ray (CR) removal  
-   - alternating sky subtraction and CR masking  
-   - multiple iterations to decouple sky residuals and CR contamination  
+---
 
-### Coaddition
-7. Coaddition (flux, variance, covariance products)  
+### Coaddition (Step 5–7)
+5. Coaddition (flux, variance, covariance products)  
+6. WCS refinement *(optional, on coadds)*  
+7. Variance normalization *(optional, on coadds)*  
 
-### Post-processing / Analysis
-8. WCS refinement (optional, on coadds)  
-9. Spectral window selection (e.g., Hα region)  
-10. Sky-line masking  
-11. Stellar continuum / absorption removal  
-12. PSF subtraction  
-13. Background subtraction  
-14. Source masking  
-15. Adaptive smoothing / signal extraction  
-16. Post-processing (e.g., denoising)
+---
+
+### Post-processing / Analysis (Step 8+)
+8. Spectral window selection (e.g., Hα region)  
+9. Background subtraction  
+10. Source masking  
+11. Adaptive smoothing / signal extraction (ADS)  
+12. Post-ADS processing (e.g., connected-component denoising)
+
+Additional analysis steps (e.g., sky-line masking, stellar continuum removal, PSF subtraction) are available and may be applied depending on the science case.
 
 ---
 
 ## Documentation
 
-- [Folder Structure](docs/folder_structure.md)
 - [Step 1: File Lists](docs/step1_master_filelists.md)
 - [Step 2: WCS Correction](docs/step2_wcs.md)
 - [Step 3: Cube Cropping](docs/step3_crop.md)
@@ -88,7 +122,9 @@ The sky subtraction workflow differs significantly between the KCWI-blue and KCW
 
 - [Step 7: Variance Normalization](docs/step7_variance_normalization.md)
 
-**Example Analysis Flow**
+**Example Post-processing / Analysis Flow**
+
+This represents one example analysis workflow; the exact sequence may vary depending on the science case and data quality.
 
 - [Step 8: Spectral Window Selection](docs/step8_spectral_window.md)
 
@@ -101,21 +137,21 @@ The sky subtraction workflow differs significantly between the KCWI-blue and KCW
   ↳ *(Optional but highly recommended)*: [Post-ADS Denoising](docs/post_ads_denoising.md)
 
 
+
 ---
 
 ## License
 
 This project is licensed under the MIT License.
 
-If you use this code in your work, please cite the corresponding paper:
+If you use this code in your work, please cite the corresponding paper:  
 *A Framework for Ultra--Low Surface Brightness IFU Emission Mapping with KCWI* (submitted to PASP).
 
-
---- 
+---
 
 ## Future Development
 
-Several additional methods have already been developed and tested in standalone workflows, and will be incorporated into the pipeline in future releases:
+Several additional methods have already been developed and tested in standalone workflows and will be incorporated into the pipeline in future releases:
 
 1. **Batch WCS processing**  
    Batch processing will be implemented for efficiency. However, we strongly recommend inspecting each cube individually, as WCS solutions can vary significantly between exposures.
@@ -136,4 +172,4 @@ Several additional methods have already been developed and tested in standalone 
    An additional coadd mode will be implemented using Monte Carlo error propagation, avoiding explicit covariance matrix construction. This approach is particularly useful when:
    - wavelength axes differ significantly between cubes  
    - interpolation effects are complex  
-   - a computationally lighter uncertainty estimate is desired  
+   - a computationally lighter uncertainty estimate is desired
