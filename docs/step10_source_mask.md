@@ -4,7 +4,7 @@
 
 This step identifies and masks continuum sources in the field prior to adaptive smoothing.
 
-It is applied after continuum subtraction to prevent high-SNR compact sources from biasing the smoothing of faint, extended emission.
+It is applied after continuum subtraction to prevent high-SNR compact sources from biasing the smoothing of faint, extended emission, even though the adaptive smoothing algorithm itself partially mitigates this effect.
 
 ---
 
