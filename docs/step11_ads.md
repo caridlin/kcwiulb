@@ -178,7 +178,7 @@ DIAGNOSTIC_WAVELENGTH_RANGES = [
 A multi-page PDF is generated containing the following diagnostic plots.  
 An example is available here:
 
-![Example Diagnostics](../examples/figures/coadd_blue_a_sky.wc.oii.bg.ads2.5.diagnostic.png)
+![Example Diagnostics](../examples/figures/coadd_blue_a_sky.wc.oii.bg.mask.ads2.5.diagnostic.png)
 
 #### 1. SNR Verification
 

@@ -109,9 +109,6 @@ def _build_output_path(input_path: Path, snr_min: float, suffix: str) -> Path:
     snr_tag = f"{snr_min:g}"
     name = input_path.name
 
-    if name.endswith(".mask.fits"):
-        prefix = name[: -len(".mask.fits")]
-        return input_path.with_name(f"{prefix}.ads{snr_tag}{suffix}")
     if name.endswith(".fits"):
         prefix = name[: -len(".fits")]
         return input_path.with_name(f"{prefix}.ads{snr_tag}{suffix}")
