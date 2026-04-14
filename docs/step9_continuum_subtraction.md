@@ -32,7 +32,7 @@ The uncertainty from the continuum fit is propagated into the variance cube.
 
 ## Running the Step
 
-```
+```bash
 python run_continuum_subtraction.py
 ```
 
@@ -42,7 +42,7 @@ python run_continuum_subtraction.py
 
 Users can define:
 
-```
+```python
 CHANNEL = “blue”
 GROUP = “a”
 PRODUCT = “sky”

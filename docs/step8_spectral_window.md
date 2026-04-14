@@ -41,7 +41,7 @@ The spectral WCS is updated accordingly so that the cropped cube retains a consi
 
 ## Running the Step
 
-```text
+```bash
 python run_spectral_window.py
 ```
 
@@ -51,7 +51,7 @@ python run_spectral_window.py
 
 Users can define:
 
-```text
+```python
 CHANNEL = "blue"
 GROUP = "a"
 PRODUCT = "sky"

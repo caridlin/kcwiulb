@@ -74,7 +74,7 @@ This will start a local server and automatically open the viewer in a web browse
 
 Before running, users can modify parameters in `run_interactive_viewer.py`:
 
-```text
+```python
 # Data and file selection
 CHANNEL = "blue"     # KCWI channel
 GROUP = "a"          # Coadd group

@@ -80,7 +80,7 @@ $$ \mathrm{CRPIX1, CRPIX2} \rightarrow (x_{\mathrm{ref}}, y_{\mathrm{ref}}) $$
 
 Run:
 
-```text
+```bash
 python run_wcs_coadd.py
 ```
 
@@ -95,7 +95,7 @@ This script:
 
 Key parameters in run_wcs_coadd.py:
 
-```text
+```python
 # Reference sky coordinates (e.g., from SDSS)
 RA_DEG = ...
 DEC_DEG = ...

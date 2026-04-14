@@ -28,9 +28,11 @@ Run the coadd script:
 
 Before running, edit the script to specify:
 
+```python
     PRODUCT = "sky"        # or "sky2"
     PA = 125               # position angle
     PX_THRESH = 0.1        # pixel inclusion threshold
+```
 
 This allows:
 - selecting between different sky subtraction outputs (`sky` vs `sky2`)  
@@ -43,10 +45,12 @@ This allows:
 
 Users can control which data are coadded by editing:
 
+```python
     GROUP_SUFFIXES_TO_RUN = ["a"]
     OFFSETS_TO_RUN = ["offset2", "offset3"]
     FIELDS_TO_EXCLUDE = []
     FILES_TO_EXCLUDE = ["kb231022_00169"]
+```
 
 This allows:
 - selecting subsets of the data  

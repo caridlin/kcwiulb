@@ -31,7 +31,7 @@ The mask is then applied to the background-subtracted cube.
 
 ## Running the Step
 
-```
+```bash
 python run_source_mask.py
 ```
 
@@ -39,7 +39,7 @@ python run_source_mask.py
 
 ## Configuration
 
-```
+```python
 ## Configuration
 
 CHANNEL = "blue"  

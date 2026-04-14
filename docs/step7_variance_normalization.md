@@ -44,7 +44,7 @@ and similarly for the covariance.
 
 ## Running the Step
 
-```text
+```bash
 python run_variance_normalization.py
 ```
 ---
@@ -53,7 +53,7 @@ python run_variance_normalization.py
 
 Users can adjust key parameters in `run_variance_normalization.py`:
 
-```text
+```python
 CHANNEL = "blue"
 GROUP = "a"
 PRODUCT = "sky"

@@ -14,7 +14,7 @@ python run_wcs_one.py
 
 Edit the script:
 
-```text
+```python
 FIELD = "offset2_a"
 CUBE_ID = "kb240208_00108"
 CHANNEL = "blue"

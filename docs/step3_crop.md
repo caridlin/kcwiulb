@@ -16,7 +16,7 @@ python run_crop_batch.py
 
 Cropping parameters are defined separately for the blue and red channels:
 
-```text
+```python
 CROP_FIELDS = {
     "blue": {
         "xcrop": (2, 26),

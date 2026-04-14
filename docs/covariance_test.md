@@ -76,7 +76,7 @@ This script loads the coadded cube, rebins it over a range of kernel sizes, comp
 
 Key parameters in `run_covariance_test.py`:
 
-```text
+```python
 # Output directory
 OUTPUT_DIR = COADD_DIR  # saves results in the coadd folder
 
