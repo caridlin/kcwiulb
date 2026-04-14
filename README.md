@@ -97,7 +97,7 @@ The sky subtraction workflow differs significantly between the KCWI-blue and KCW
 
 - [Step 10: Source Masking](docs/step10_source_mask.md)
 
-- [Step 11: Adaptive Smoothing](docs/step7_ads.md)
+- [Step 11: Adaptive Smoothing](docs/step11_ads.md)
 
 ---
 

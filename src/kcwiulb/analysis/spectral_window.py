@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Sequence
 
 import numpy as np
 from astropy.io import fits
@@ -102,17 +101,25 @@ def crop_spectral_window_fits(
 # ===============================
 def crop_covariance_data(
     cov_data_path: str | Path,
+    index_start: int,
+    index_end: int,
     label: str | None = None,
     overwrite: bool = True,
 ) -> Path:
     """
-    For now: just rename (no spectral dependence).
+    Crop covariance data along the spectral axis, matching FITS crop.
+    
+    cov_data shape: (n_pairs, n_wave)
     """
     cov_data_path = Path(cov_data_path)
     output_path = _npy_output_path(cov_data_path, label)
 
     data = np.load(cov_data_path)
-    np.save(output_path, data)
+
+    # --- THIS IS THE CRUCIAL LINE (same as your notebook) ---
+    cropped = data[:, index_start:index_end].copy()
+
+    np.save(output_path, cropped)
 
     return output_path
 
@@ -150,7 +157,12 @@ def crop_spectral_window_group(
     )
 
     # --- Covariance ---
-    cov_out = crop_covariance_data(cov_data_path, label=label)
+    cov_out = crop_covariance_data(
+        cov_data_path,
+        index_start=i0,
+        index_end=i1,
+        label=label,
+    )
 
     return SpectralWindowResult(
         input_paths=[flux_path, var_path, cov_data_path],

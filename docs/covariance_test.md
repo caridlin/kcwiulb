@@ -124,7 +124,7 @@ This provides a **quantitative description** of how covariance inflates the nois
 A simple model is fit:
 
 $\frac{\sigma_{\mathrm{measured}}}{\sigma_{\mathrm{nocov}}}
-= \mathrm{norm}\,(1 + \alpha \log N_{\mathrm{kernel}})$
+= \mathrm{norm}(1 + \alpha \log N_{\mathrm{kernel}})$
 
 This is useful for characterizing noise behavior but is **not required** for validation.
 
