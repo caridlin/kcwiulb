@@ -4,7 +4,7 @@ Sky subtraction for the red channel follows the same procedure as the blue chann
 
 For a full description of the method, see:
 
-**[Sky Subtraction (Blue, Iteration 1)](sky_blue_iter1.md)**
+**[Sky Subtraction (Blue, Iteration 1)](step4_sky_blue_iter1.md)**
 
 ---
 
