@@ -12,7 +12,7 @@ For a full description of the method, see:
 
 First, generate the sky mapping file:
 
-```text
+```bash
 python generate_sky_map_red_iter12.py
 ```
 
@@ -38,7 +38,7 @@ Sky exposures are selected based on:
 
 ### Run Sky Subtraction
 
-```text
+```bash
 python run_sky_red_iter1.py
 ```
 
@@ -76,11 +76,21 @@ Sky subtraction for the red channel is performed in multiple stages:
 
 ### Wavelength Selection
 
-White-band masks and median spectra are constructed using:
+White-band masks and median spectra use wavelength ranges such as:
 
 ```text
 7000–7200 Å and 7400–7800 Å
 ```
+
+These are controlled by:
+
+```python
+COLLAPSE_WAVELENGTH_RANGES = [(7000, 7200), (7400, 7800)]
+```
+
+in `scripts/run_sky_red_iter1.py`.
+
+Users can modify this parameter to change which wavelength regions are used for masking and sky estimation.
 
 ---
 
@@ -116,7 +126,7 @@ These diagnostics are essential for:
 
 Example diagnostic:
 
-![Sky Subtraction Diagnostic Example](../examples/figures/kr231211_00180_sky_iter1.png)
+<img src="../examples/figures/kr231211_00180_sky_iter1.png" width="600">
 
 ---
 
