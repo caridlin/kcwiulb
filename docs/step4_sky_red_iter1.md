@@ -132,6 +132,22 @@ Example diagnostic:
 
 ---
 
+### Single-Cube Debug Mode
+
+For detailed inspection, a single-cube script is provided:
+
+```bash
+python run_sky_red_iter1_one.py
+```
+
+This allows:
+
+- testing individual sky combinations  
+- overriding sky selections for debugging  
+- inspecting diagnostic plots interactively or via PDF  
+
+---
+
 ### Notes
 
 - Imperfect subtraction at this stage is expected due to cosmic rays  
