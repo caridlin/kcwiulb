@@ -99,7 +99,7 @@ Example diagnostic:
 For detailed inspection, a single-cube script is provided:
 
 ```text
-python run_blue_iter1_single.py
+python run_blue_iter1_one.py
 ```
 
 This allows:
