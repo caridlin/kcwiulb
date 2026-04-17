@@ -110,8 +110,8 @@ This keeps the outputs local to each field and preserves the per-cube pipeline s
 
 ### Notes
 
-- This step performs cosmic ray identification and masking only; it does not recompute the sky subtraction  
-- The resulting masks are used in the next iteration to improve continuum masking and sky estimation  
+- This step performs cosmic ray identification and masking only; it does not modify the flux or recompute the sky subtraction  
+- The resulting masks are used in subsequent iterations to improve cosmic ray rejection and continuum masking  
 - Keeping this step separate makes it easier to inspect and debug cosmic ray identification before proceeding  
 - We recommend opening the first (flux) and third (CRMASK) extensions of the `.cr.fits` file in DS9 (or similar) to verify that bright, compact features are correctly flagged  
 

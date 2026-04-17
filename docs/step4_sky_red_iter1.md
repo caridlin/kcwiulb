@@ -65,12 +65,19 @@ Sky subtraction for the red channel is performed in multiple stages:
    - Initial sky subtraction using two skies  
    - Masks may be contaminated by cosmic rays  
 
-2. **Cosmic Ray Masking (next step)**  
+2. **Cosmic Ray Identification and Masking (next step)**  
    - Detect and mask cosmic rays in the sky-subtracted cubes  
 
-3. **Refined Iteration (later step)**  
-   - Recompute masks using cleaned data  
-   - Perform improved sky subtraction  
+3. **Refined Iterations (later steps)**  
+   - Improve cosmic ray masking and continuum masking  
+
+4. **Final Iteration**  
+   - Perform the final sky subtraction using cleaned masks  
+
+**Important:**  
+Iterations prior to the final step (including Iteration 1 and subsequent refinement steps) do **not** recompute the sky subtraction.  
+They are used to progressively improve cosmic ray identification and continuum masking.  
+Only the final iteration performs the definitive sky subtraction.
 
 ---
 
@@ -152,4 +159,4 @@ This allows:
 
 - Imperfect subtraction at this stage is expected due to cosmic rays  
 - Always inspect diagnostic PDFs before proceeding  
-- The cosmic ray masking step is critical for improving subsequent iterations  
+- The cosmic ray identification and masking step is critical for improving subsequent iterations  
