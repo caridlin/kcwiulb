@@ -18,7 +18,7 @@ SKY_MAP = BASE / "sky_map_red_iter12.txt"
 FIELD = "offset2_a"
 SCIENCE_ID = "kr231211_00180"
 
-COLLAPSE_WAVELENGTH_RANGES = [(7000, 7200), (7400, 7800)]
+COLLAPSE_WAVELENGTH_RANGES = [(7000, 7500), (7700, 8000)]
 
 # Optional manual override (set to None to use sky map)
 SKY1_OVERRIDE = None
