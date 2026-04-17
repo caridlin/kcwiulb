@@ -1,9 +1,8 @@
 # kcwiulb
 
 
-[![DOI](https://zenodo.org/badge/19637000.svg)](https://doi.org/10.5281/zenodo.19637000)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.19637000.svg)](https://doi.org/10.5281/zenodo.19637000)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-
 
 A Python package for ultra–low surface brightness IFU emission mapping with KCWI, developed during my PhD.
 
