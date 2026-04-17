@@ -40,11 +40,11 @@ median + ALPHA × sigma
 
 where `sigma` is estimated from the propagated uncertainties of the contributing spectra.
 
-This approach is similar in spirit to the coadd step, since it uses the same common-grid overlap logic.
+This approach is similar in spirit to the coadd step, as it uses the same common-grid overlap logic.
 
 ---
 
-### Run Cosmic Ray Removal
+### Run Cosmic Ray Identification and Masking
 
 ```bash
 python run_cr_red_iter1.py
@@ -83,10 +83,10 @@ PX_THRESH = 0.1
 where:
 
 - `PA` sets the position angle used to define the common WCS grid  
-- `ALPHA` is the sigma threshold for cosmic ray detection  
+- `ALPHA` controls the aggressiveness of cosmic ray identification  
 - `PX_THRESH` is the minimum overlap threshold for including a contributing pixel  
 
-Higher `ALPHA` values are more conservative and flag fewer pixels.
+Lower `ALPHA` values result in more aggressive masking, while higher values are more conservative.
 
 ---
 
@@ -110,10 +110,10 @@ This keeps the outputs local to each field and preserves the per-cube pipeline s
 
 ### Notes
 
-- This step produces masks only; it does not yet recompute the sky subtraction  
-- The resulting cosmic ray masks are used in the next iteration to improve continuum masking and sky estimation  
+- This step performs cosmic ray identification and masking only; it does not recompute the sky subtraction  
+- The resulting masks are used in the next iteration to improve continuum masking and sky estimation  
 - Keeping this step separate makes it easier to inspect and debug cosmic ray identification before proceeding  
-- We recommend opening the first (flux) and third (CRMASK) extensions of the `.cr.fits` file in DS9 (or similar) to verify that cosmic rays are correctly identified
+- We recommend opening the first (flux) and third (CRMASK) extensions of the `.cr.fits` file in DS9 (or similar) to verify that bright, compact features are correctly flagged  
 
 Example inspection:
 
