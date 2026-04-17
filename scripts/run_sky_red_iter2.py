@@ -1,0 +1,70 @@
+from pathlib import Path
+
+from kcwiulb.plot.sky_diagnostics import plot_red_iter2_diagnostics
+from kcwiulb.sky.red_iter2 import subtract_red_iter2
+from kcwiulb.sky.utils import read_sky_map_iter1, resolve_cube_path
+
+
+BASE = Path(__file__).resolve().parent
+CHANNEL = "red"
+
+SKY_MAP = BASE / "sky_map_red_iter12.txt"
+
+COLLAPSE_WAVELENGTH_RANGES = [(7000, 7200), (7400, 7800)]
+
+WRITE_OUTPUT = True
+SAVE_DIAGNOSTIC = True
+
+
+def main():
+    sky_map = read_sky_map_iter1(SKY_MAP)
+
+    for field, entries in sky_map.items():
+        print(f"\nField: {field}")
+
+        for entry in entries:
+            science_id = entry["science"]
+            sky1_id = entry["sky1"]
+            sky2_id = entry["sky2"]
+            sky1_field = entry["sky1_field"]
+            sky2_field = entry["sky2_field"]
+
+            science_path = BASE / CHANNEL / field / f"{science_id}_icubes.wc.c.sky.cr.fits"
+            sky1_path = resolve_cube_path(BASE, CHANNEL, sky1_field, sky1_id, "_icubes.wc.c.sky.cr.fits")
+            sky2_path = resolve_cube_path(BASE, CHANNEL, sky2_field, sky2_id, "_icubes.wc.c.sky.cr.fits")
+
+            if not science_path.exists() or not sky1_path.exists() or not sky2_path.exists():
+                print(f"  [SKIP] Missing file for {science_id}")
+                continue
+
+            print(f"  Science: {science_id}")
+            print(f"    sky1: {sky1_id} ({sky1_field})")
+            print(f"    sky2: {sky2_id} ({sky2_field})")
+
+            if WRITE_OUTPUT:
+                output_path_spaxel = science_path.with_name(science_path.stem + ".sky.fits")
+                output_path_median = science_path.with_name(science_path.stem + ".sky2.fits")
+            else:
+                output_path_spaxel = None
+                output_path_median = None
+
+            result = subtract_red_iter2(
+                science_path=science_path,
+                sky1_path=sky1_path,
+                sky2_path=sky2_path,
+                output_path_spaxel=output_path_spaxel,
+                output_path_median=output_path_median,
+                collapse_wavelength_ranges=COLLAPSE_WAVELENGTH_RANGES,
+            )
+
+            if SAVE_DIAGNOSTIC:
+                diag_path = BASE / "diagnostics" / CHANNEL / field / f"{science_id}_sky_iter2.pdf"
+                plot_red_iter2_diagnostics(
+                    result,
+                    savepath=diag_path,
+                    show=False,
+                )
+
+
+if __name__ == "__main__":
+    main()
