@@ -117,7 +117,9 @@ These diagnostics are critical for assessing:
 
 Example diagnostic:
 
-![Sky Subtraction Diagnostic Example](../examples/figures/kb240208_00108_blue_sky_iter2.png)
+<p align="center">
+  <img src="../examples/figures/kb240208_00108_blue_sky_iter2_v2.png" width="600">
+</p>
 
 
 ---
