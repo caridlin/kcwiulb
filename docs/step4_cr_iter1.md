@@ -117,6 +117,6 @@ This keeps the outputs local to each field and preserves the per-cube pipeline s
 
 Example inspection:
 
-![Cosmic Ray Mask Example](../examples/figures/cr_mask_iter1_v2.png)
+![Cosmic Ray Mask Example](../examples/figures/cr_mask_iter1_v3.png)
 
 Since this is the initial (Iteration 1) masking step, the result is not expected to be fully clean; remaining artifacts will be refined in later iterations.
