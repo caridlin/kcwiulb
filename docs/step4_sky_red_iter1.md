@@ -62,22 +62,25 @@ As a result, masking at this stage may include cosmic ray artifacts, which can i
 Sky subtraction for the red channel is performed in multiple stages:
 
 1. **Iteration 1 (this step)**  
-   - Initial sky subtraction using two skies  
-   - Masks may be contaminated by cosmic rays  
+   - Perform an initial sky subtraction using two skies  
+   - Masks may still be contaminated by cosmic rays  
 
-2. **Cosmic Ray Identification and Masking (next step)**  
+2. **Cosmic Ray Identification and Masking**  
    - Detect and mask cosmic rays in the sky-subtracted cubes  
 
-3. **Refined Iterations (later steps)**  
-   - Improve cosmic ray masking and continuum masking  
+3. **Refined Sky Subtraction Iterations**  
+   - Recompute sky subtraction from the original cube using improved masks  
 
-4. **Final Iteration**  
-   - Perform the final sky subtraction using cleaned masks  
+4. **Further Cosmic Ray and Continuum Mask Refinement**  
+   - Use intermediate products to improve masking for the next iteration  
+
+5. **Final Iteration**  
+   - Perform the final sky subtraction from the original cube using the cleaned masks  
 
 **Important:**  
-Iterations prior to the final step (including Iteration 1 and subsequent refinement steps) do **not** recompute the sky subtraction.  
-They are used to progressively improve cosmic ray identification and continuum masking.  
-Only the final iteration performs the definitive sky subtraction.
+Each iteration recomputes the sky subtraction from the **original (unsubtracted) cube** using progressively improved masks.  
+Intermediate sky-subtracted cubes are **not chained** between iterations and are used only to refine cosmic ray identification and continuum masking.  
+Only the final iteration produces the sky-subtracted cube used for scientific analysis.
 
 ---
 
@@ -158,5 +161,7 @@ This allows:
 ### Notes
 
 - Imperfect subtraction at this stage is expected due to cosmic rays  
+- This output is an intermediate product used to improve subsequent cosmic ray and continuum masking  
+- Sky subtraction will be recomputed from the original cube in later iterations  
 - Always inspect diagnostic PDFs before proceeding  
 - The cosmic ray identification and masking step is critical for improving subsequent iterations  

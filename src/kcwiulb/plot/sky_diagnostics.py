@@ -630,3 +630,193 @@ def plot_red_iter1_diagnostics(
         plt.show()
     else:
         plt.close(fig4)
+
+
+def plot_red_iter2_diagnostics(
+    result,
+    savepath: str | Path | None = None,
+    show: bool = False,
+    whiteband_vmin: float = -1,
+    whiteband_vmax: float = 80,
+    residual_zoom_ylim: tuple[float, float] = (-0.002, 0.002),
+) -> None:
+    """
+    Save red iteration 2 diagnostics as a multi-page PDF.
+
+    Pages:
+    1. White-band images and 2D continuum masks
+    2. Median spectra after CR+continuum masking
+    3. Sky model fit, residuals, and fitted parameters
+    4. Zoomed residual spectrum
+    """
+    pdf = None
+    if savepath is not None:
+        savepath = Path(savepath)
+        savepath.parent.mkdir(parents=True, exist_ok=True)
+        pdf = PdfPages(savepath.with_suffix(".pdf"))
+
+    # ========================================================
+    # PAGE 1 — white-band images + 2D masks
+    # ========================================================
+    fig1 = plt.figure(figsize=(9, 5))
+
+    titles = ["Science", "Sky 1", "Sky 2"]
+    images = [
+        result.science_whiteband,
+        result.sky1_whiteband,
+        result.sky2_whiteband,
+    ]
+    masks = [
+        result.science_mask_2d,
+        result.sky1_mask_2d,
+        result.sky2_mask_2d,
+    ]
+
+    for i in range(3):
+        ax = plt.subplot(2, 3, i + 1)
+        ax.imshow(
+            images[i],
+            origin="lower",
+            cmap="RdBu_r",
+            aspect=0.2,
+            vmin=whiteband_vmin,
+            vmax=whiteband_vmax,
+        )
+        ax.set_title(f"{titles[i]} white-band")
+        ax.set_xticks([])
+        ax.set_yticks([])
+
+        ax = plt.subplot(2, 3, i + 4)
+        ax.imshow(
+            masks[i],
+            origin="lower",
+            cmap="gray",
+            aspect=0.2,
+            vmin=0,
+            vmax=1,
+        )
+        ax.set_title(f"{titles[i]} continuum mask")
+        ax.set_xticks([])
+        ax.set_yticks([])
+
+    fig1.suptitle(f"Red iter2 white-band and continuum masks: {result.science_path.name}", fontsize=12)
+    plt.tight_layout(rect=[0, 0, 1, 0.95])
+
+    if pdf is not None:
+        pdf.savefig(fig1)
+        plt.close(fig1)
+    elif show:
+        plt.show()
+    else:
+        plt.close(fig1)
+
+    # ========================================================
+    # PAGE 2 — median spectra after masking
+    # ========================================================
+    fig2 = plt.figure(figsize=(8, 4))
+    ax = plt.gca()
+
+    ax.plot(result.wavelength, result.science_spec, label="science")
+    ax.plot(result.wavelength, result.sky1_spec, label="sky1")
+    ax.plot(result.wavelength, result.sky2_spec, label="sky2")
+
+    ax.axvline(x=result.wavgood0, c="k", linestyle="--", alpha=0.7)
+    ax.axvline(x=result.wavgood1, c="k", linestyle="--", alpha=0.7)
+
+    ax.legend()
+    ax.set_title("Median spectra after CR + continuum masking")
+    ax.set_xlabel("Wavelength")
+    ax.set_ylabel("Flux")
+
+    plt.tight_layout()
+
+    if pdf is not None:
+        pdf.savefig(fig2)
+        plt.close(fig2)
+    elif show:
+        plt.show()
+    else:
+        plt.close(fig2)
+
+    # ========================================================
+    # PAGE 3 — fit and residual
+    # ========================================================
+    fig3 = plt.figure(figsize=(9, 4))
+    ax = plt.gca()
+
+    ax.plot(result.wavelength, result.science_spec, label="science", lw=1.2)
+    ax.plot(result.wavelength, result.sky1_spec, label="sky1", lw=1.0, alpha=0.8)
+    ax.plot(result.wavelength, result.sky2_spec, label="sky2", lw=1.0, alpha=0.8)
+    ax.plot(result.wavelength, result.model_spec, "--", label="model", lw=1.2)
+    ax.plot(result.wavelength, result.residual_spec, label="residual", lw=1.0)
+
+    ax.axvline(x=result.wavgood0, c="k", linestyle="--", alpha=0.7)
+    ax.axvline(x=result.wavgood1, c="k", linestyle="--", alpha=0.7)
+
+    ax.legend(loc="upper right", fontsize=9)
+
+    model_text = (
+        "Model:\n"
+        "(a0 + a1·wl)·sky1 + (b0 + b1·wl)·sky2 + c0 + c1·wl"
+    )
+
+    pcov = getattr(result, "covariance", None)
+    param_text = model_text + "\n\n" + format_fit_params(result.params, pcov)
+
+    if hasattr(result, "chi2") and result.chi2 is not None:
+        param_text += f"\n\nchi2 = {result.chi2:.3e}"
+
+    ax.text(
+        0.02,
+        0.98,
+        param_text,
+        transform=ax.transAxes,
+        fontsize=8,
+        verticalalignment="top",
+        bbox=dict(
+            boxstyle="round",
+            facecolor="white",
+            edgecolor="black",
+            alpha=0.85,
+        ),
+    )
+
+    ax.set_title("Sky spectra, fit, and residual")
+    ax.set_xlabel("Wavelength")
+    ax.set_ylabel("Flux")
+
+    plt.tight_layout()
+
+    if pdf is not None:
+        pdf.savefig(fig3)
+        plt.close(fig3)
+    elif show:
+        plt.show()
+    else:
+        plt.close(fig3)
+
+    # ========================================================
+    # PAGE 4 — zoomed residual
+    # ========================================================
+    fig4 = plt.figure(figsize=(9, 2))
+    ax = plt.gca()
+
+    ax.plot(result.wavelength, result.residual_spec, lw=1)
+    ax.axvline(x=result.wavgood0, c="k", linestyle="--", alpha=0.7)
+    ax.axvline(x=result.wavgood1, c="k", linestyle="--", alpha=0.7)
+
+    ax.set_ylim(residual_zoom_ylim)
+    ax.set_title("Residual spectrum (zoomed)")
+    ax.set_xlabel("Wavelength")
+    ax.set_ylabel("Flux")
+
+    plt.tight_layout()
+
+    if pdf is not None:
+        pdf.savefig(fig4)
+        plt.close(fig4)
+        pdf.close()
+    elif show:
+        plt.show()
+    else:
+        plt.close(fig4)
