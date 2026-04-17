@@ -1,5 +1,10 @@
 # kcwiulb
 
+
+[![DOI](https://zenodo.org/badge/19637000.svg)](https://doi.org/10.5281/zenodo.19637000)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+
+
 A Python package for ultra–low surface brightness IFU emission mapping with KCWI, developed during my PhD.
 
 This pipeline has been used in several published works, including:
@@ -11,7 +16,7 @@ This pipeline has been used in several published works, including:
   Z. Lin et al. 2025, *The Astrophysical Journal*, 995, 12  
 
 A detailed description of the methodology is presented in  
-*A Framework for Ultra--Low Surface Brightness IFU Emission Mapping with KCWI* (submitted to PASP).
+*A Framework for Ultra--Low Surface Brightness IFU Emission Mapping with KCWI* (in preparation).
 
 ---
 
@@ -144,8 +149,16 @@ This represents one example analysis workflow; the exact sequence may vary depen
 
 This project is licensed under the MIT License.
 
-If you use this code in your work, please cite the corresponding paper:  
-*A Framework for Ultra--Low Surface Brightness IFU Emission Mapping with KCWI* (submitted to PASP).
+If you use this code in your work, please cite:
+
+Lin, Z. et al. (in preparation),  
+*A Framework for Ultra--Low Surface Brightness IFU Emission Mapping with KCWI*
+
+and the software release:
+
+Lin, Z. (2026),  
+*kcwiulb: Ultra--low surface brightness IFU pipeline*,  
+Zenodo. https://doi.org/10.5281/zenodo.19637000
 
 ---
 
