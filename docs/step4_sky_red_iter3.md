@@ -37,8 +37,11 @@ This improves:
 - overall residual stability  
 
 > **Note:** As in **[Sky Subtraction (Blue, Iteration 2)](step4_sky_blue_iter2.md)**, this step separates the sky continuum and emission-line residuals before fitting.  
-> The continuum is first estimated and removed, and the remaining line-dominated residual is modeled using multiple sky exposures.  
-> This separation is important because the smooth continuum and narrow atmospheric emission lines **do not evolve in the same way**, and modeling them jointly can introduce systematic residuals.  
+>  
+> - The continuum is first estimated and removed  
+> - The remaining line-dominated residual is modeled using multiple sky exposures  
+> - The smooth continuum and narrow atmospheric emission lines **do not evolve in the same way**, so modeling them jointly introduces systematics  
+>  
 > Treating these components independently is a key part of the method used in this work.
 
 ---
@@ -108,6 +111,13 @@ Use these to verify:
 - fit stability  
 - residual suppression  
 
+Example diagnostic:
+
+<p align="center">
+  <img src="../examples/figures/kr231211_00180_red_sky_iter3.png" width="600">
+</p>
+
+
 ---
 
 ### Single-Cube Debug Mode
@@ -126,7 +136,6 @@ Useful for:
 
 ### Notes
 
-- This is the **final iteration** used for analysis  
-- Fitting is performed **per wavelength region**, not globally  
-- No further masking or iterations follow this step  
-- Residuals should be minimal; inspect diagnostics to confirm  
+- This is the **final sky subtraction iteration** prior to coaddition and is the only subtraction applied to the original cube for scientific analysis  
+- Earlier iterations are used exclusively to improve **cosmic ray (CR) masking** and are not propagated into the final product  
+- Fitting is performed **per wavelength region**, rather than with a single global model  
