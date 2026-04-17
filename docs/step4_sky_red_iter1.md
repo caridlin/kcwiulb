@@ -137,7 +137,7 @@ These diagnostics are essential for:
 Example diagnostic:
 
 <p align="center">
-  <img src="../examples/figures/kr231211_00180_sky_iter1.png" width="600">
+  <img src="../examples/figures/kr231211_00180_red_sky_iter1.png" width="600">
 </p>
 
 ---
