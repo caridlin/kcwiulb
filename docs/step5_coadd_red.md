@@ -103,8 +103,10 @@ Example:
 
 <img src="../examples/figures/coadd_red_a_sky2_diagnostics.png" width="500">
 
-The median flux map shows that **cosmic rays are effectively removed** in the coadd.  
-Small residuals may appear near the **edges**, where exposure coverage is lower.
+The median flux map indicates that **cosmic rays are effectively suppressed** in the coadd.  
+Users are encouraged to inspect the white-band images and diagnostic plots prior to further analysis, as these provide a more direct assessment of masking quality and residual artifacts.  
+
+Small residual features may still appear near the **edges**, where the exposure coverage is lower.
 
 ---
 
