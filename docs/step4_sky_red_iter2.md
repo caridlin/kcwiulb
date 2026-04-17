@@ -84,7 +84,7 @@ These plots are essential for verifying:
 Example diagnostic:
 
 <p align="center">
-  <img src="../examples/figures/kr231211_00180_red_sky_iter2.png" width="600">
+  <img src="../examples/figures/kr231211_00180_red_sky_iter2_v4.png" width="600">
 </p>
 
 ---
