@@ -68,8 +68,8 @@ python run_cr_red_iter2.py
 
 ```python
 PA = 125
-ALPHA = 3.0
-BETA = 5.0
+ALPHA = 5.0  # less aggressive than Iteration 1 (higher = more conservative); users are encouraged to experiment with different values
+BETA = 5.0   # upper threshold to protect bright emission lines and sources from being masked
 PX_THRESH = 0.1
 ```
 
