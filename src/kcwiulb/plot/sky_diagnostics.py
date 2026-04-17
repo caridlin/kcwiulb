@@ -868,8 +868,8 @@ def plot_red_iter3_diagnostics(
     show: bool = False,
     whiteband_vmin: float = -1,
     whiteband_vmax: float = 80,
-    continuum_ylim: tuple[float, float] = (-0.01, 0.06),
-    residual_zoom_ylim: tuple[float, float] = (-0.005, 0.005),
+    continuum_ylim: tuple[float, float] = (0.0, 0.6),
+    figure4_ylim: tuple[float, float] = (-0.004, 0.004),
 ) -> None:
     """
     Save red iteration 3 diagnostics as a multi-page PDF.
@@ -887,9 +887,9 @@ def plot_red_iter3_diagnostics(
         pdf = PdfPages(savepath.with_suffix(".pdf"))
 
     # ========================================================
-    # PAGE 1 — whiteband images + masks
+    # PAGE 1 — white-band images + masks
     # ========================================================
-    fig1 = plt.figure(figsize=(12, 5))
+    fig1 = plt.figure(figsize=(9, 5))
 
     titles = ["Science", "Sky 1", "Sky 2", "Sky 3", "Sky 4"]
     images = [
@@ -908,8 +908,8 @@ def plot_red_iter3_diagnostics(
     ]
 
     for i in range(5):
-        ax = plt.subplot(2, 5, i + 1)
-        ax.imshow(
+        plt.subplot(2, 5, i + 1)
+        plt.imshow(
             images[i],
             origin="lower",
             cmap="RdBu_r",
@@ -917,12 +917,12 @@ def plot_red_iter3_diagnostics(
             vmin=whiteband_vmin,
             vmax=whiteband_vmax,
         )
-        ax.set_title(f"{titles[i]} white-band")
-        ax.set_xticks([])
-        ax.set_yticks([])
+        plt.title(titles[i])
+        plt.xticks([])
+        plt.yticks([])
 
-        ax = plt.subplot(2, 5, i + 6)
-        ax.imshow(
+        plt.subplot(2, 5, i + 6)
+        plt.imshow(
             masks[i],
             origin="lower",
             cmap="gray",
@@ -930,9 +930,8 @@ def plot_red_iter3_diagnostics(
             vmin=0,
             vmax=1,
         )
-        ax.set_title(f"{titles[i]} mask")
-        ax.set_xticks([])
-        ax.set_yticks([])
+        plt.xticks([])
+        plt.yticks([])
 
     fig1.suptitle(f"Red iter3 white-band and masks: {result.science_path.name}", fontsize=12)
     plt.tight_layout(rect=[0, 0, 1, 0.95])
@@ -950,29 +949,28 @@ def plot_red_iter3_diagnostics(
     # ========================================================
     fig2 = plt.figure(figsize=(9, 8))
 
-    region_specs = [
-        (result.science_spec, result.science_spec_cont, "science"),
-        (result.sky1_spec, result.sky1_spec_cont, "sky1"),
-        (result.sky2_spec, result.sky2_spec_cont, "sky2"),
-        (result.sky3_spec, result.sky3_spec_cont, "sky3"),
-        (result.sky4_spec, result.sky4_spec_cont, "sky4"),
+    specs = [
+        (result.science_spec, result.science_spec_cont, "c1"),
+        (result.sky1_spec, result.sky1_spec_cont, "c2"),
+        (result.sky2_spec, result.sky2_spec_cont, "c3"),
+        (result.sky3_spec, result.sky3_spec_cont, "c4"),
+        (result.sky4_spec, result.sky4_spec_cont, "c5"),
     ]
 
-    for i, (spec, cont, label) in enumerate(region_specs, start=1):
+    for i, (spec, cont, label) in enumerate(specs, start=1):
         ax = plt.subplot(5, 1, i)
         ax.plot(result.wavelength, spec, label=label)
         ax.plot(result.wavelength, cont, label=f"{label} continuum")
         ax.legend(loc="upper right", fontsize=8)
         ax.set_ylim(continuum_ylim)
+        ax.set_ylabel("Flux")
 
         if i < 5:
             ax.set_xticklabels([])
         else:
             ax.set_xlabel("Wavelength")
 
-        ax.set_ylabel("Flux")
-
-    fig2.suptitle("Median spectra and continuum filtering", fontsize=12)
+    fig2.suptitle("Median sky spectra and continuum filtering", fontsize=12)
     plt.tight_layout(rect=[0, 0, 1, 0.97])
 
     if pdf is not None:
@@ -984,12 +982,24 @@ def plot_red_iter3_diagnostics(
         plt.close(fig2)
 
     # ========================================================
-    # PAGE 3 — residual model + fitted results
+    # PAGE 3 — residual model + fitted parameters
+    # similar to blue iter2
     # ========================================================
     fig3 = plt.figure(figsize=(10, 4))
     ax = plt.gca()
 
+    model_residual = np.zeros_like(result.wavelength, dtype=float)
+
+    for (i0, i1), params in zip(result.region_bounds, result.params_list):
+        model_residual[i0:i1] = (
+            params[0] * result.sky1_spec_res[i0:i1]
+            + params[1] * result.sky2_spec_res[i0:i1]
+            + params[2] * result.sky3_spec_res[i0:i1]
+            + params[3] * result.sky4_spec_res[i0:i1]
+        )
+
     ax.plot(result.wavelength, result.science_spec_res, label="science residual", lw=1.1)
+    ax.plot(result.wavelength, model_residual, "--", label="model residual", lw=1.2)
     ax.plot(result.wavelength, result.fit_residual, label="fit_residual", lw=1.2)
 
     for idx, region_res in enumerate(result.fit_residual_regions, start=1):
@@ -997,7 +1007,7 @@ def plot_red_iter3_diagnostics(
             result.wavelength,
             region_res,
             lw=0.9,
-            alpha=0.8,
+            alpha=0.7,
             label=f"region {idx} residual",
         )
 
@@ -1039,11 +1049,11 @@ def plot_red_iter3_diagnostics(
         ),
     )
 
-    ax.set_title("Residual model and fitted parameters")
+    ax.set_title("Sky spectra, fit, and residual")
     ax.set_xlabel("Wavelength")
     ax.set_ylabel("Flux")
 
-    plt.tight_layout()
+    plt.tight_layout(rect=[0, 0, 1, 0.95])
 
     if pdf is not None:
         pdf.savefig(fig3)
@@ -1059,7 +1069,7 @@ def plot_red_iter3_diagnostics(
     fig4 = plt.figure(figsize=(9, 2.5))
     ax = plt.gca()
 
-    ax.plot(result.wavelength, result.fit_residual, lw=1.2)
+    ax.plot(result.wavelength, result.fit_residual, lw=1.2, label="fit_residual")
 
     ax.axvline(x=result.wavgood0, c="k", linestyle="--", alpha=0.7)
     ax.axvline(x=result.wavgood1, c="k", linestyle="--", alpha=0.7)
@@ -1071,12 +1081,12 @@ def plot_red_iter3_diagnostics(
         if i == len(result.region_wavelength_bounds):
             ax.axvline(x=w1, c="gray", linestyle=":", alpha=0.7)
 
-    ax.set_ylim(residual_zoom_ylim)
+    ax.set_ylim(figure4_ylim)
     ax.set_title("Residual spectrum (zoomed)")
     ax.set_xlabel("Wavelength")
     ax.set_ylabel("Flux")
 
-    plt.tight_layout()
+    plt.tight_layout(rect=[0, 0, 1, 0.92])
 
     if pdf is not None:
         pdf.savefig(fig4)

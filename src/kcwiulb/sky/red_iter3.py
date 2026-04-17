@@ -7,9 +7,10 @@ import numpy as np
 import numpy.ma as ma
 from astropy.io import fits
 from astropy.stats import sigma_clip
+from scipy import ndimage
 from scipy.optimize import curve_fit
 
-from kcwiulb.sky.utils import build_wavelength_axis, write_cube
+from kcwiulb.sky.utils import build_wavelength_axis, weighted_quantile
 
 
 @dataclass
@@ -130,14 +131,6 @@ def wavelength_mask(
 
 
 def notebook_mask2d_to_3d(mask2d: np.ndarray, shape3d: tuple[int, int, int]) -> np.ndarray:
-    """
-    Mirror the notebook exactly:
-
-    c_mask_3d = np.zeros_like(c1)
-    c_mask_3d = c_mask_3d.T
-    c_mask_3d[c_mask.T] = 1
-    c_mask_3d = c_mask_3d.T
-    """
     c_mask_3d = np.zeros(shape3d, dtype=bool)
     c_mask_3d = c_mask_3d.T
     c_mask_3d[mask2d.T] = True
@@ -152,22 +145,28 @@ def masked_region_median_and_uncert(
 ) -> tuple[np.ndarray, np.ndarray]:
     """
     Notebook-style per-cube sky spectrum and uncertainty.
-    Uses only the cube's own 2D sigma-clipped mask at this stage.
     """
     e = []
     f = []
 
     for y_ in range(cube.shape[2]):
         for x_ in range(cube.shape[1]):
-            if mask2d[x_, y_] is False:
+            if not mask2d[x_, y_]:
                 e.append(cube[:, x_, y_])
                 f.append(cube_uncert[:, x_, y_])
+
+    if len(e) < 2:
+        raise ValueError(
+            f"Too few unmasked spaxels for notebook-style extraction: {len(e)}"
+        )
 
     e = np.asarray(e, dtype=float)
     f = np.asarray(f, dtype=float)
 
     spec = np.nanmedian(e, axis=0)
-    spec_std2 = np.sqrt(np.nansum(np.power(f, 2), axis=0) * np.pi / (2 * (len(f) - 1)))
+    spec_std2 = np.sqrt(
+        np.nansum(np.power(f, 2), axis=0) * np.pi / (2 * (len(f) - 1))
+    )
 
     return spec, spec_std2
 
@@ -208,7 +207,7 @@ def subtract_red_iter3(
     c5, h5, c5_uncert = load_cube_basic(sky_paths[3])
 
     # --------------------------------------------------------
-    # Corresponding *.sky.cr.sky2.cr.fits cubes: c6..c10
+    # Corresponding CR-masked cubes: c6..c10
     # --------------------------------------------------------
     c6, _, _, c1_cr_mask = load_cr_masked_cube(science_mask_path)
     c7, _, _, c2_cr_mask = load_cr_masked_cube(sky_mask_paths[0])
@@ -242,6 +241,12 @@ def subtract_red_iter3(
     d4 = np.ma.sum(wavelength_mask(c9, h4), axis=0)
     d5 = np.ma.sum(wavelength_mask(c10, h5), axis=0)
 
+    d1 = np.asarray(d1.filled(np.nan) if ma.isMaskedArray(d1) else d1, dtype=float)
+    d2 = np.asarray(d2.filled(np.nan) if ma.isMaskedArray(d2) else d2, dtype=float)
+    d3 = np.asarray(d3.filled(np.nan) if ma.isMaskedArray(d3) else d3, dtype=float)
+    d4 = np.asarray(d4.filled(np.nan) if ma.isMaskedArray(d4) else d4, dtype=float)
+    d5 = np.asarray(d5.filled(np.nan) if ma.isMaskedArray(d5) else d5, dtype=float)
+
     d1_filtered = sigma_clip(d1, sigma=sigma_clip_sigma, maxiters=None, masked=True)
     d2_filtered = sigma_clip(d2, sigma=sigma_clip_sigma, maxiters=None, masked=True)
     d3_filtered = sigma_clip(d3, sigma=sigma_clip_sigma, maxiters=None, masked=True)
@@ -255,7 +260,7 @@ def subtract_red_iter3(
     c5_mask = np.array(d5_filtered.mask, dtype=bool)
 
     # --------------------------------------------------------
-    # Extract notebook-style spectra from c1..c5 using own masks
+    # Notebook-style spectra from c1..c5 using own masks
     # --------------------------------------------------------
     sky1_spec, sky1_spec_std2 = masked_region_median_and_uncert(c1, c1_uncert, c1_mask)
     sky2_spec, sky2_spec_std2 = masked_region_median_and_uncert(c2, c2_uncert, c2_mask)
@@ -266,13 +271,41 @@ def subtract_red_iter3(
     # --------------------------------------------------------
     # Continuum filtering
     # --------------------------------------------------------
-    from kcwiulb.sky.utils import weighted_median_filter_1d
-
-    sky1_spec_cfw = weighted_median_filter_1d(sky1_spec, sky1_spec_std2, width=cfwidth)
-    sky2_spec_cfw = weighted_median_filter_1d(sky2_spec, sky2_spec_std2, width=cfwidth)
-    sky3_spec_cfw = weighted_median_filter_1d(sky3_spec, sky3_spec_std2, width=cfwidth)
-    sky4_spec_cfw = weighted_median_filter_1d(sky4_spec, sky4_spec_std2, width=cfwidth)
-    sky5_spec_cfw = weighted_median_filter_1d(sky5_spec, sky5_spec_std2, width=cfwidth)
+    sky1_spec_cfw = ndimage.generic_filter(
+        sky1_spec,
+        weighted_quantile,
+        size=(cfwidth,),
+        mode="reflect",
+        extra_keywords={"quantiles": 0.3, "sample_weight": abs(sky1_spec_std2)},
+    )
+    sky2_spec_cfw = ndimage.generic_filter(
+        sky2_spec,
+        weighted_quantile,
+        size=(cfwidth,),
+        mode="reflect",
+        extra_keywords={"quantiles": 0.3, "sample_weight": abs(sky2_spec_std2)},
+    )
+    sky3_spec_cfw = ndimage.generic_filter(
+        sky3_spec,
+        weighted_quantile,
+        size=(cfwidth,),
+        mode="reflect",
+        extra_keywords={"quantiles": 0.3, "sample_weight": abs(sky3_spec_std2)},
+    )
+    sky4_spec_cfw = ndimage.generic_filter(
+        sky4_spec,
+        weighted_quantile,
+        size=(cfwidth,),
+        mode="reflect",
+        extra_keywords={"quantiles": 0.3, "sample_weight": abs(sky4_spec_std2)},
+    )
+    sky5_spec_cfw = ndimage.generic_filter(
+        sky5_spec,
+        weighted_quantile,
+        size=(cfwidth,),
+        mode="reflect",
+        extra_keywords={"quantiles": 0.3, "sample_weight": abs(sky5_spec_std2)},
+    )
 
     sky1_res_cfw = sky1_spec - sky1_spec_cfw
     sky2_res_cfw = sky2_spec - sky2_spec_cfw
@@ -280,12 +313,19 @@ def subtract_red_iter3(
     sky4_res_cfw = sky4_spec - sky4_spec_cfw
     sky5_res_cfw = sky5_spec - sky5_spec_cfw
 
-    # residual cubes
-    c1_res = c1 - sky1_spec_cfw[:, None, None]
-    c2_res = c2 - sky2_spec_cfw[:, None, None]
-    c3_res = c3 - sky3_spec_cfw[:, None, None]
-    c4_res = c4 - sky4_spec_cfw[:, None, None]
-    c5_res = c5 - sky5_spec_cfw[:, None, None]
+    c1_res = np.empty_like(c1)
+    c2_res = np.empty_like(c1)
+    c3_res = np.empty_like(c1)
+    c4_res = np.empty_like(c1)
+    c5_res = np.empty_like(c1)
+
+    for x_ in range(c1.shape[1]):
+        for y_ in range(c1.shape[2]):
+            c1_res[:, x_, y_] = c1[:, x_, y_] - sky1_spec_cfw
+            c2_res[:, x_, y_] = c2[:, x_, y_] - sky2_spec_cfw
+            c3_res[:, x_, y_] = c3[:, x_, y_] - sky3_spec_cfw
+            c4_res[:, x_, y_] = c4[:, x_, y_] - sky4_spec_cfw
+            c5_res[:, x_, y_] = c5[:, x_, y_] - sky5_spec_cfw
 
     # --------------------------------------------------------
     # Master mask exactly like notebook
@@ -301,16 +341,17 @@ def subtract_red_iter3(
             np.logical_or(c3_cr_mask, np.logical_or(c4_cr_mask, c5_cr_mask)),
         ),
     )
-    master_mask_3d = np.logical_or(c_mask_3d, cr_mask)
+    c_mask_3d = np.logical_or(c_mask_3d, cr_mask)
+    master_mask_3d = c_mask_3d.copy()
 
     wl_3d = np.tile(wl, (c1.shape[2], c1.shape[1], 1)).T
 
-    c1_res_masked = ma.masked_array(c1_res, mask=master_mask_3d)
-    c2_res_masked = ma.masked_array(c2_res, mask=master_mask_3d)
-    c3_res_masked = ma.masked_array(c3_res, mask=master_mask_3d)
-    c4_res_masked = ma.masked_array(c4_res, mask=master_mask_3d)
-    c5_res_masked = ma.masked_array(c5_res, mask=master_mask_3d)
-    wl_3d_masked = ma.masked_array(wl_3d, mask=master_mask_3d)
+    c1_res_masked = ma.masked_array(c1_res, mask=c_mask_3d)
+    c2_res_masked = ma.masked_array(c2_res, mask=c_mask_3d)
+    c3_res_masked = ma.masked_array(c3_res, mask=c_mask_3d)
+    c4_res_masked = ma.masked_array(c4_res, mask=c_mask_3d)
+    c5_res_masked = ma.masked_array(c5_res, mask=c_mask_3d)
+    wl_3d_masked = ma.masked_array(wl_3d, mask=c_mask_3d)
 
     # --------------------------------------------------------
     # Exact notebook wavelength regions
@@ -377,9 +418,6 @@ def subtract_red_iter3(
     )
     var_add_list = [var_add1, var_add2, var_add3]
 
-    # --------------------------------------------------------
-    # Notebook c111/c121 etc
-    # --------------------------------------------------------
     c111 = np.empty_like(c1)
     c121 = np.empty_like(c1)
     c111_uncert = np.empty_like(c1_uncert)
@@ -401,8 +439,7 @@ def subtract_red_iter3(
                 (sky2_res_cfw, sky3_res_cfw, sky4_res_cfw, sky5_res_cfw), *params1
             )
             c111[:, x_, y_] = c1_res[:, x_, y_] - sky_model_four(
-                (c2_res[:, x_, y_], c3_res[:, x_, y_], c4_res[:, x_, y_], c5_res[:, x_, y_]),
-                *params1,
+                (c2_res[:, x_, y_], c3_res[:, x_, y_], c4_res[:, x_, y_], c5_res[:, x_, y_]), *params1
             )
             c111_uncert[:, x_, y_] = np.sqrt(
                 np.power(c1_uncert[:, x_, y_], 2)
@@ -419,8 +456,7 @@ def subtract_red_iter3(
                 (sky2_res_cfw, sky3_res_cfw, sky4_res_cfw, sky5_res_cfw), *params2
             )
             c112[:, x_, y_] = c1_res[:, x_, y_] - sky_model_four(
-                (c2_res[:, x_, y_], c3_res[:, x_, y_], c4_res[:, x_, y_], c5_res[:, x_, y_]),
-                *params2,
+                (c2_res[:, x_, y_], c3_res[:, x_, y_], c4_res[:, x_, y_], c5_res[:, x_, y_]), *params2
             )
             c112_uncert[:, x_, y_] = np.sqrt(
                 np.power(c1_uncert[:, x_, y_], 2)
@@ -437,8 +473,7 @@ def subtract_red_iter3(
                 (sky2_res_cfw, sky3_res_cfw, sky4_res_cfw, sky5_res_cfw), *params3
             )
             c113[:, x_, y_] = c1_res[:, x_, y_] - sky_model_four(
-                (c2_res[:, x_, y_], c3_res[:, x_, y_], c4_res[:, x_, y_], c5_res[:, x_, y_]),
-                *params3,
+                (c2_res[:, x_, y_], c3_res[:, x_, y_], c4_res[:, x_, y_], c5_res[:, x_, y_]), *params3
             )
             c113_uncert[:, x_, y_] = np.sqrt(
                 np.power(c1_uncert[:, x_, y_], 2)
@@ -472,7 +507,6 @@ def subtract_red_iter3(
             science_path.name.replace("icubes.wc.c", "icubes.wc.c.sky.cr.sky2.cr.sky2")
         )
 
-    # notebook writes CRMASK only to c11 product
     hdu1 = fits.PrimaryHDU(c11.data if ma.isMaskedArray(c11) else c11)
     hdu2 = fits.ImageHDU(c11_uncert)
     hdu3 = fits.ImageHDU(cr_mask.astype(int))
@@ -503,11 +537,11 @@ def subtract_red_iter3(
         fit_residual=fit_residual,
         fit_residual_regions=fit_residual_regions,
         var_add_list=var_add_list,
-        science_whiteband=np.asarray(d1.filled(np.nan) if ma.isMaskedArray(d1) else d1),
-        sky1_whiteband=np.asarray(d2.filled(np.nan) if ma.isMaskedArray(d2) else d2),
-        sky2_whiteband=np.asarray(d3.filled(np.nan) if ma.isMaskedArray(d3) else d3),
-        sky3_whiteband=np.asarray(d4.filled(np.nan) if ma.isMaskedArray(d4) else d4),
-        sky4_whiteband=np.asarray(d5.filled(np.nan) if ma.isMaskedArray(d5) else d5),
+        science_whiteband=d1,
+        sky1_whiteband=d2,
+        sky2_whiteband=d3,
+        sky3_whiteband=d4,
+        sky4_whiteband=d5,
         science_mask=c1_mask,
         sky1_mask=c2_mask,
         sky2_mask=c3_mask,

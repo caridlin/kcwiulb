@@ -112,7 +112,7 @@ Additional analysis steps (e.g., sky-line masking, stellar continuum removal, PS
 
 - **Step 4: Sky Subtraction**
   - Blue: [Iter 1](docs/step4_sky_blue_iter1.md), [Iter 2](docs/step4_sky_blue_iter2.md)
-  - Red: [Iter 1](docs/step4_sky_red_iter1.md), [CR Masking 1](docs/step4_cr_iter1.md), [Iter 2](docs/step4_sky_red_iter2.md), [CR Masking 2](docs/step4_cr_iter2.md)
+  - Red: [Iter 1](docs/step4_sky_red_iter1.md), [CR Masking 1](docs/step4_cr_iter1.md), [Iter 2](docs/step4_sky_red_iter2.md), [CR Masking 2](docs/step4_cr_iter2.md), [Iter 3](docs/step4_sky_red_iter3.md)
 
 - **Step 5: Coadd**
   - [Blue](docs/step5_coadd_blue.md), [Red](docs/step5_coadd_red.md)  
