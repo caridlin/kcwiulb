@@ -92,7 +92,7 @@ red/{field}/{cube_id}_icubes.wc.c.sky.cr.sky2.cr.fits
 
 Example:
 
-![Cosmic Ray Mask Example](../examples/figures/cr_mask_iter2.png)
+![Cosmic Ray Mask Example](../examples/figures/cr_mask_iter2_v2.png)
 
 In this example, a specific wavelength slice shows a background gradient where Iteration 2 more cleanly identifies cosmic rays compared to Iteration 1.
 
