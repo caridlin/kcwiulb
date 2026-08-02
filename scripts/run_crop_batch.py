@@ -90,10 +90,15 @@ def main():
         cropped_cube_ids = []
 
         for cube_id in cube_ids:
+
+            # Prefer WCS-corrected cube, otherwise use original cube
             cube = BASE / CHANNEL / field / f"{cube_id}_icubes.wc.fits"
 
             if not cube.exists():
-                print(f"  [MISSING] {cube}")
+                cube = BASE / CHANNEL / field / f"{cube_id}_icubes.fits"
+
+            if not cube.exists():
+                print(f"  [MISSING] {cube_id}_icubes(.wc).fits")
                 continue
 
             print(f"\n  Cropping: {cube.name}")
