@@ -31,6 +31,7 @@ class RedCoaddResult:
     mask_paths: list[Path]
     output_flux_path: Path
     output_var_path: Path
+    output_exposure_path: Path
     output_cov_data_path: Path
     output_cov_coord_path: Path
     n_cubes: int
@@ -291,6 +292,11 @@ def coadd_red_group(
                                 cov_dict[coord] = val.copy()
 
     print("[coadd_red_group] Normalizing by total exposure time...")
+
+    # Save a 2D exposure map (ignores CR masking).
+    t_exp_map = t_exp_var_tot.copy()
+
+    # Use infinity only internally to avoid division by zero.
     t_exp_tot[t_exp_tot == 0] = np.inf
 
     for y_j in range(coadd_data.shape[1]):
@@ -315,20 +321,26 @@ def coadd_red_group(
         output_dir = Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    flux_path = output_dir / f"coadd_red_{group_name}_{product}.fits"
-    var_path = output_dir / f"coadd_red_{group_name}_{product}_var.fits"
-    cov_data_path = output_dir / f"coadd_red_{group_name}_{product}_cov_data.npy"
-    cov_coord_path = output_dir / f"coadd_red_{group_name}_{product}_cov_coordinate.npy"
+    prefix = f"coadd_red_{group_name}_{product}"
+
+    flux_path = output_dir / f"{prefix}.fits"
+    var_path = output_dir / f"{prefix}_var.fits"
+    exposure_path = output_dir / f"{prefix}_exposure.fits"
+    cov_data_path = output_dir / f"{prefix}_cov_data.npy"
+    cov_coord_path = output_dir / f"{prefix}_cov_coordinate.npy"
 
     print("[coadd_red_group] Writing outputs...")
     write_fits_cube(flux_path, coadd_data, coadd_hdr)
     write_fits_cube(var_path, coadd_var, coadd_hdr)
+    # The saved red exposure map is 2D.
+    write_fits_cube(exposure_path, t_exp_map, get_header2d(coadd_hdr))
+
     np.save(cov_data_path, cov_data)
     np.save(cov_coord_path, cov_coordinate)
 
-    print("[coadd_red_group] Done.")
     print(f"  Flux: {flux_path}")
     print(f"  Var:  {var_path}")
+    print(f"  Exposure: {exposure_path}")
     print(f"  Cov data:  {cov_data_path}")
     print(f"  Cov coord: {cov_coord_path}")
 
@@ -339,6 +351,7 @@ def coadd_red_group(
         mask_paths=mask_paths,
         output_flux_path=flux_path,
         output_var_path=var_path,
+        output_exposure_path=exposure_path,
         output_cov_data_path=cov_data_path,
         output_cov_coord_path=cov_coord_path,
         n_cubes=len(input_paths),

@@ -105,7 +105,7 @@ def split_field_name(field: str) -> tuple[str, str | None]:
 
 def cube_id_to_path(base: Path, channel: str, field: str, cube_id: str, product: str) -> Path:
     if product == "sky":
-        suffix = "_icubes.wc.c.sky.sky.fits"
+        suffix = "_icubes.wc.c.sky.fits"
     elif product == "sky2":
         suffix = "_icubes.wc.c.sky.sky2.fits"
     else:
@@ -136,6 +136,7 @@ def print_progress(i: int, total: int, start_time: float) -> None:
 def run_coadd_diagnostics(
     flux_path: Path,
     var_path: Path,
+    exposure_path: Path | None = None,
     output_dir: Path | None = None,
     show: bool = True,
     save: bool = True,
@@ -144,6 +145,14 @@ def run_coadd_diagnostics(
 
     coadd_data = fits.getdata(flux_path)
     coadd_var = fits.getdata(var_path)
+
+    t_exp_tot = None
+    if exposure_path is not None:
+        if exposure_path.exists():
+            t_exp_tot = fits.getdata(exposure_path)
+            print(f"  Exposure: {exposure_path}")
+        else:
+            print(f"  [WARNING] Exposure map not found: {exposure_path}")
 
     if output_dir is None:
         output_dir = flux_path.parent
@@ -158,7 +167,7 @@ def run_coadd_diagnostics(
     plot_coadd_diagnostics(
         coadd_data=coadd_data,
         coadd_var=coadd_var,
-        t_exp_tot=None,
+        t_exp_tot=t_exp_tot,
         save_path=save_path,
     )
 
@@ -166,19 +175,20 @@ def run_coadd_diagnostics(
         print(f"  Saved: {save_path}")
 
     if show and save_path is not None:
-        import matplotlib.pyplot as plt
         import matplotlib.image as mpimg
+        import matplotlib.pyplot as plt
 
         img = mpimg.imread(save_path)
         plt.figure(figsize=(15, 4))
         plt.imshow(img)
         plt.axis("off")
         plt.show()
+
     elif show and save_path is None:
         plot_coadd_diagnostics(
             coadd_data=coadd_data,
             coadd_var=coadd_var,
-            t_exp_tot=None,
+            t_exp_tot=t_exp_tot,
             save_path=None,
         )
 
@@ -294,17 +304,21 @@ def main():
             print(f"  Coadded {result.n_cubes} cubes in {dt:.1f}s")
             print(f"  Flux: {result.output_flux_path}")
             print(f"  Var:  {result.output_var_path}")
+            print(f"  Exposure: {result.output_exposure_path}")
             print(f"  Cov data:  {result.output_cov_data_path}")
             print(f"  Cov coord: {result.output_cov_coord_path}")
+            
 
             flux_path = result.output_flux_path
             var_path = result.output_var_path
+            exposure_path = result.output_exposure_path
             diag_dir = flux_path.parent
 
         else:
             output_dir = BASE / "coadd" / CHANNEL / group_name
             flux_path = output_dir / f"coadd_blue_{group_name}_{PRODUCT}.fits"
             var_path = output_dir / f"coadd_blue_{group_name}_{PRODUCT}_var.fits"
+            exposure_path = output_dir / f"coadd_blue_{group_name}_{PRODUCT}_exposure.fits"
             diag_dir = output_dir
 
             if not flux_path.exists():
@@ -317,14 +331,21 @@ def main():
                 print_progress(i, total, t_start)
                 continue
 
+            if not exposure_path.exists():
+                print(f"  [SKIP] Missing coadd exposure file: {exposure_path}")
+                print_progress(i, total, t_start)
+                continue
+
             print("  Using existing coadd outputs:")
             print(f"  Flux: {flux_path}")
             print(f"  Var:  {var_path}")
+            print(f"  Exposure: {exposure_path}")
 
         try:
             run_coadd_diagnostics(
                 flux_path=flux_path,
                 var_path=var_path,
+                exposure_path=exposure_path,
                 output_dir=diag_dir,
                 show=SHOW_DIAGNOSTICS,
                 save=SAVE_DIAGNOSTICS,
