@@ -15,10 +15,15 @@ def extract_cube_id(text: str) -> str:
     return text.split("(")[0].strip()
 
 
-def extract_field(text: str) -> str | None:
+# def extract_field(text: str) -> str | None:
+#     if "(" in text and ")" in text:
+#         return text.split("(")[1].split(")")[0].strip()
+#     return None
+
+def extract_field(text: str, default: str = "sky") -> str:
     if "(" in text and ")" in text:
         return text.split("(")[1].split(")")[0].strip()
-    return None
+    return default
 
 
 def read_sky_map_iter1(path: str | Path) -> dict[str, list[dict[str, str]]]:
@@ -90,7 +95,7 @@ def load_cube(path: str | Path) -> tuple[np.ndarray, fits.Header, np.ndarray]:
     with fits.open(path) as hdul:
         cube = hdul[0].data.copy()
         header = hdul[0].header.copy()
-        uncert = hdul[1].data.copy()
+        uncert = np.asarray(hdul["UNCERT"].data, dtype=float)
     return cube, header, uncert
 
 
