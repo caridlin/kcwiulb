@@ -47,6 +47,12 @@ WCS_FIELDS = {
             "y_mean_init": 16,
             "x_stddev_init": 4,
             "y_stddev_init": 3,
+            "plot": {
+                "full_vmin": 20,
+                "full_vmax": 25,
+                "cutout_vmin": 0,
+                "cutout_vmax": 32,
+            },
         },
         "offset3_a": {
             "ra_deg": 137.623977217,
@@ -165,7 +171,14 @@ def main():
     if FIELD not in WCS_FIELDS[CHANNEL]:
         raise ValueError(f"Unknown field: {FIELD}")
 
-    cfg = {**WCS_FIELDS[CHANNEL][FIELD], **OVERRIDES}
+    field_cfg = WCS_FIELDS[CHANNEL][FIELD]
+
+    cfg = {
+        key: value
+        for key, value in field_cfg.items()
+        if key != "plot"
+    }
+    cfg.update(OVERRIDES)
 
     cube = BASE / CHANNEL / FIELD / f"{CUBE_ID}_icubes.fits"
     if not cube.exists():
@@ -210,9 +223,8 @@ def main():
     print(f"  x_ref     = {result.x_ref:.3f}")
     print(f"  y_ref     = {result.y_ref:.3f}")
 
-    # --------------------------------------------------------
-    # Diagnostics plot
-    # --------------------------------------------------------
+    plot_cfg = field_cfg.get("plot", {})
+
     plot_wcs_diagnostics(
         fit,
         row_start=cfg["row_start"],
@@ -222,7 +234,13 @@ def main():
         title=f"{CHANNEL} / {FIELD} / {CUBE_ID}",
         savepath=plot_path if SAVE_PLOT else None,
         show=SHOW_PLOT,
+        full_vmin=plot_cfg.get("full_vmin"),
+        full_vmax=plot_cfg.get("full_vmax"),
+        cutout_vmin=plot_cfg.get("cutout_vmin"),
+        cutout_vmax=plot_cfg.get("cutout_vmax"),
     )
+
+    print("Plot settings:", plot_cfg)
 
     print(f"\nSaved diagnostic: {plot_path}")
 
