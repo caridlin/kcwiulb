@@ -3,166 +3,280 @@ from pathlib import Path
 
 
 BASE = Path(__file__).resolve().parent
+CHANNEL = "red"
+
 MASTER_FILELIST = BASE / "master_filelist_red.txt"
 OUTPUT_FILE = BASE / "sky_map_red_iter3.txt"
 
 
 def read_master_filelist(path: Path) -> dict[str, list[str]]:
     groups: dict[str, list[str]] = {}
-    current_field = None
+    current_group: str | None = None
 
-    with open(path, "r", encoding="utf-8") as f:
-        for line in f:
-            line = line.strip()
+    with path.open("r", encoding="utf-8") as f:
+        for raw_line in f:
+            line = raw_line.strip()
 
-            if not line:
+            if not line or line.startswith("#"):
                 continue
 
             if line.startswith("[") and line.endswith("]"):
-                current_field = line[1:-1]
-                groups[current_field] = []
-            else:
-                if current_field is None:
-                    raise ValueError(f"Found cube ID before field header in {path}")
-                groups[current_field].append(line)
+                current_group = line[1:-1].strip()
+                groups[current_group] = []
+                continue
+
+            if current_group is None:
+                raise ValueError(
+                    f"Found cube ID before a group header in {path}: {line}"
+                )
+
+            groups[current_group].append(line)
 
     return groups
 
 
-def extract_number(cube_id: str) -> int:
-    m = re.search(r"_(\d+)$", cube_id)
-    if not m:
-        raise ValueError(f"Could not extract frame number from {cube_id}")
-    return int(m.group(1))
+def extract_frame_number(cube_id: str) -> int:
+    match = re.search(r"_(\d+)$", cube_id)
+
+    if match is None:
+        raise ValueError(
+            f"Could not extract frame number from cube ID: {cube_id}"
+        )
+
+    return int(match.group(1))
 
 
 def extract_date_code(cube_id: str) -> str:
-    m = re.match(r"(kr\d+)_", cube_id)
-    if not m:
-        raise ValueError(f"Could not extract date code from {cube_id}")
-    return m.group(1)
+    match = re.match(r"(kr\d+)_", cube_id)
+
+    if match is None:
+        raise ValueError(
+            f"Could not extract date code from cube ID: {cube_id}"
+        )
+
+    return match.group(1)
 
 
+def select_adjacent_four_skies(
+    science_id: str,
+    candidates: list[tuple[str, str]],
+) -> list[tuple[str, str]]:
+    """
+    Select four sky frames.
+
+    Parameters
+    ----------
+    science_id
+        Science cube ID.
+    candidates
+        Candidate skies as (sky_cube_id, sky_field).
+
+    Priority
+    --------
+    1. Use only skies from the same observing date.
+    2. Prefer two skies below and two above the science frame.
+    3. Otherwise, use the four nearest sky frames.
+    """
+    science_date = extract_date_code(science_id)
+    science_number = extract_frame_number(science_id)
+
+    same_date = [
+        (sky_id, sky_field)
+        for sky_id, sky_field in candidates
+        if extract_date_code(sky_id) == science_date
+    ]
+
+    if len(same_date) < 4:
+        raise RuntimeError(
+            f"Not enough same-date sky candidates for {science_id}: "
+            f"{same_date}"
+        )
+
+    same_date.sort(
+        key=lambda item: extract_frame_number(item[0])
+    )
+
+    lower = [
+        item
+        for item in same_date
+        if extract_frame_number(item[0]) < science_number
+    ]
+
+    upper = [
+        item
+        for item in same_date
+        if extract_frame_number(item[0]) > science_number
+    ]
+
+    if len(lower) >= 2 and len(upper) >= 2:
+        selected = lower[-2:] + upper[:2]
+    else:
+        selected = sorted(
+            same_date,
+            key=lambda item: (
+                abs(
+                    extract_frame_number(item[0])
+                    - science_number
+                ),
+                extract_frame_number(item[0]),
+            ),
+        )[:4]
+
+    selected = sorted(
+        selected,
+        key=lambda item: extract_frame_number(item[0]),
+    )
+
+    if len(selected) != 4:
+        raise RuntimeError(
+            f"Failed to select four skies for {science_id}: "
+            f"{selected}"
+        )
+
+    return selected
+
+
+# ============================================================
+# Explicit [science] / [sky] layout
+# ============================================================
+def build_explicit_sky_map(
+    groups: dict[str, list[str]],
+) -> dict[str, list[dict]]:
+    science_ids = groups["science"]
+    sky_ids = groups["sky"]
+
+    if not science_ids:
+        raise ValueError("The [science] group is empty.")
+
+    if len(sky_ids) < 4:
+        raise ValueError(
+            "The [sky] group must contain at least four frames."
+        )
+
+    candidates = [
+        (sky_id, "sky")
+        for sky_id in sky_ids
+    ]
+
+    entries = []
+
+    for science_id in science_ids:
+        entries.append(
+            {
+                "science": science_id,
+                "skies": select_adjacent_four_skies(
+                    science_id=science_id,
+                    candidates=candidates,
+                ),
+            }
+        )
+
+    return {"science": entries}
+
+
+# ============================================================
+# Paired *_a / *_b layout
+# ============================================================
 def split_field(field: str) -> tuple[str, str]:
-    base, suffix = field.rsplit("_", 1)
+    try:
+        base, suffix = field.rsplit("_", 1)
+    except ValueError as exc:
+        raise ValueError(
+            f"Expected paired field name such as offset2_a: "
+            f"{field}"
+        ) from exc
+
+    if suffix not in {"a", "b"}:
+        raise ValueError(
+            f"Expected field suffix '_a' or '_b': {field}"
+        )
+
     return base, suffix
 
 
-def get_primary_and_fallback_sky_fields(
+def get_sky_fields(
     science_field: str,
     all_fields: list[str],
 ) -> list[str]:
+    """
+    Return ordered candidate sky fields.
+
+    The directly paired field is preferred first, followed by
+    fallback fields on the same a/b side.
+    """
     science_base, science_suffix = split_field(science_field)
     sky_suffix = "b" if science_suffix == "a" else "a"
 
     primary = f"{science_base}_{sky_suffix}"
 
     fallback = []
+
     for field in all_fields:
-        base, suffix = split_field(field)
+        _, suffix = split_field(field)
+
         if suffix == sky_suffix and field != primary:
             fallback.append(field)
 
     fallback.sort()
-    return [primary] + fallback
+
+    existing_fields = set(all_fields)
+
+    return [
+        field
+        for field in [primary, *fallback]
+        if field in existing_fields
+    ]
 
 
-def get_candidate_skies(
+def get_paired_candidates(
     science_field: str,
-    science_id: str,
     groups: dict[str, list[str]],
 ) -> list[tuple[str, str]]:
     """
-    Return candidate sky exposures as (cube_id, field) pairs for iter3.
+    Build ordered candidate skies as (cube_id, field).
     """
-    date_code = extract_date_code(science_id)
-    all_fields = list(groups.keys())
-    sky_fields = get_primary_and_fallback_sky_fields(science_field, all_fields)
-
     candidates: list[tuple[str, str]] = []
 
-    for sky_field in sky_fields:
-        if sky_field not in groups:
-            continue
+    for sky_field in get_sky_fields(
+        science_field=science_field,
+        all_fields=list(groups),
+    ):
+        for sky_id in groups[sky_field]:
+            candidates.append((sky_id, sky_field))
 
-        for sid in groups[sky_field]:
-            if extract_date_code(sid) == date_code:
-                candidates.append((sid, sky_field))
+    # Remove duplicate cube IDs while preserving field priority.
+    seen: set[str] = set()
+    deduped: list[tuple[str, str]] = []
 
-    seen = set()
-    deduped = []
-    for sid, field in candidates:
-        if sid not in seen:
-            deduped.append((sid, field))
-            seen.add(sid)
+    for sky_id, sky_field in candidates:
+        if sky_id not in seen:
+            deduped.append((sky_id, sky_field))
+            seen.add(sky_id)
 
     return deduped
 
 
-def get_adjacent_four_skies(
-    science_field: str,
-    science_id: str,
+def build_paired_sky_map(
     groups: dict[str, list[str]],
-) -> list[tuple[str, str]]:
-    """
-    Choose four skies for iter3.
-
-    Priority
-    --------
-    1. Same date code
-    2. Primary paired sky field
-    3. Fallback sky field(s) on the same sky side
-    4. Nearest in frame number, preferring two below and two above if possible
-    """
-    sci_num = extract_number(science_id)
-    candidates = get_candidate_skies(science_field, science_id, groups)
-
-    if len(candidates) < 4:
-        raise RuntimeError(
-            f"Not enough sky candidates for {science_id}: {candidates}"
-        )
-
-    sky_list = sorted(
-        [(extract_number(sid), sid, field) for sid, field in candidates],
-        key=lambda x: x[0]
-    )
-
-    lower = [(sid, field) for num, sid, field in sky_list if num < sci_num]
-    upper = [(sid, field) for num, sid, field in sky_list if num > sci_num]
-
-    if len(lower) >= 2 and len(upper) >= 2:
-        selected = lower[-2:] + upper[:2]
-    else:
-        selected = sorted(
-            candidates,
-            key=lambda x: abs(extract_number(x[0]) - sci_num)
-        )[:4]
-
-    selected = sorted(selected, key=lambda x: extract_number(x[0]))
-
-    if len(selected) != 4:
-        raise RuntimeError(f"Failed for {science_id}: {selected}")
-
-    return selected
-
-
-def build_iter3_sky_map(groups: dict[str, list[str]]) -> dict[str, list[dict]]:
-    sky_map = {}
+) -> dict[str, list[dict]]:
+    sky_map: dict[str, list[dict]] = {}
 
     for science_field, science_ids in groups.items():
+        candidates = get_paired_candidates(
+            science_field=science_field,
+            groups=groups,
+        )
+
         entries = []
 
         for science_id in science_ids:
-            skies = get_adjacent_four_skies(
-                science_field,
-                science_id,
-                groups
-            )
-
             entries.append(
                 {
                     "science": science_id,
-                    "skies": skies,
+                    "skies": select_adjacent_four_skies(
+                        science_id=science_id,
+                        candidates=candidates,
+                    ),
                 }
             )
 
@@ -171,31 +285,119 @@ def build_iter3_sky_map(groups: dict[str, list[str]]) -> dict[str, list[dict]]:
     return sky_map
 
 
-def write_sky_map(path: Path, sky_map: dict[str, list[dict]]) -> None:
-    with open(path, "w", encoding="utf-8") as f:
-        f.write("# Proposed sky map for red iteration 3\n")
-        f.write("# Includes field labels for debugging\n")
-        f.write("# Format:\n")
-        f.write("# science | sky1(field) | sky2(field) | sky3(field) | sky4(field)\n\n")
+def detect_layout(
+    groups: dict[str, list[str]],
+) -> str:
+    lower_names = {
+        name.lower()
+        for name in groups
+    }
+
+    has_science = "science" in lower_names
+    has_sky = "sky" in lower_names
+
+    if has_science or has_sky:
+        if not (has_science and has_sky):
+            raise ValueError(
+                "Explicit layout requires both [science] and [sky]."
+            )
+
+        return "explicit"
+
+    return "paired"
+
+
+def normalize_explicit_group_names(
+    groups: dict[str, list[str]],
+) -> dict[str, list[str]]:
+    return {
+        name.lower(): cube_ids
+        for name, cube_ids in groups.items()
+    }
+
+
+def write_sky_map(
+    path: Path,
+    sky_map: dict[str, list[dict]],
+    layout: str,
+) -> None:
+    with path.open("w", encoding="utf-8") as f:
+        f.write(
+            "# Proposed sky map for red iteration 3\n"
+        )
+
+        if layout == "explicit":
+            f.write("# Format:\n")
+            f.write(
+                "# science | sky1 | sky2 | sky3 | sky4\n\n"
+            )
+        else:
+            f.write(
+                "# Includes field labels for sky resolution\n"
+            )
+            f.write("# Format:\n")
+            f.write(
+                "# science | sky1(field) | sky2(field) | "
+                "sky3(field) | sky4(field)\n\n"
+            )
 
         for field, entries in sky_map.items():
             f.write(f"[{field}]\n")
 
             for entry in entries:
-                sky_str = " | ".join(
-                    f"{sid}({fld})" for sid, fld in entry["skies"]
+                if layout == "explicit":
+                    sky_text = " | ".join(
+                        sky_id
+                        for sky_id, _ in entry["skies"]
+                    )
+                else:
+                    sky_text = " | ".join(
+                        f"{sky_id}({sky_field})"
+                        for sky_id, sky_field in entry["skies"]
+                    )
+
+                f.write(
+                    f"{entry['science']} | {sky_text}\n"
                 )
-                f.write(f"{entry['science']} | {sky_str}\n")
 
             f.write("\n")
 
 
 def main() -> None:
     groups = read_master_filelist(MASTER_FILELIST)
-    sky_map = build_iter3_sky_map(groups)
-    write_sky_map(OUTPUT_FILE, sky_map)
+    layout = detect_layout(groups)
 
+    if layout == "explicit":
+        groups = normalize_explicit_group_names(groups)
+        sky_map = build_explicit_sky_map(groups)
+    else:
+        sky_map = build_paired_sky_map(groups)
+
+    write_sky_map(
+        path=OUTPUT_FILE,
+        sky_map=sky_map,
+        layout=layout,
+    )
+
+    print(f"Detected layout: {layout}")
     print(f"Wrote: {OUTPUT_FILE}")
+
+    for field, entries in sky_map.items():
+        print(f"\n[{field}]")
+
+        for entry in entries:
+            sky_text = ", ".join(
+                (
+                    f"{sky_id} ({sky_field})"
+                    if layout == "paired"
+                    else sky_id
+                )
+                for sky_id, sky_field in entry["skies"]
+            )
+
+            print(
+                f"  {entry['science']}: {sky_text}"
+            )
 
 
 if __name__ == "__main__":
