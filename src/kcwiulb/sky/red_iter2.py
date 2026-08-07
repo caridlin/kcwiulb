@@ -49,7 +49,7 @@ def load_cr_masked_cube(path: str | Path) -> tuple[np.ndarray, fits.Header, np.n
     with fits.open(path) as hdul:
         data = hdul[0].data.copy()
         header = hdul[0].header.copy()
-        uncert = hdul[1].data.copy()
+        uncert = hdul["UNCERT"].data.copy()
 
         if len(hdul) >= 3:
             cr_mask = hdul[2].data.astype(bool)

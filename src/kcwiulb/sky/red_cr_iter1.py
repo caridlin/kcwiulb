@@ -8,8 +8,8 @@ from astropy.io import fits
 from astropy.wcs import WCS
 from shapely.geometry import Polygon as shapely_polygon
 
+from kcwiulb.sky.utils import load_cube
 from kcwiulb.coadd.blue import (
-    load_cube,
     get_header2d,
     build_common_header,
     _precompute_pixel_boxes,

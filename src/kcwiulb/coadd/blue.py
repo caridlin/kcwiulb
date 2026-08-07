@@ -11,6 +11,7 @@ from astropy.wcs import WCS
 from astropy.wcs.utils import proj_plane_pixel_scales
 from shapely.geometry import Polygon as shapely_polygon
 from shapely.geometry import box as shapely_box
+from kcwiulb.sky.utils import load_cube
 
 
 @dataclass
@@ -25,22 +26,6 @@ class BlueCoaddResult:
     output_cov_coord_path: Path
     n_cubes: int
     shape: tuple[int, int, int]
-
-
-def load_cube(path: Path) -> tuple[np.ndarray, fits.Header, np.ndarray]:
-    """Load a sky-subtracted cube: flux in HDU 0 and uncertainty in HDU 1."""
-    with fits.open(path) as hdul:
-        data = np.asarray(hdul[0].data, dtype=float)
-        header = hdul[0].header.copy()
-        uncert = np.asarray(hdul[1].data, dtype=float)
-
-    if data.shape != uncert.shape:
-        raise ValueError(
-            f"Flux/uncertainty shape mismatch in {path}: "
-            f"data={data.shape}, uncertainty={uncert.shape}"
-        )
-
-    return data, header, uncert
 
 
 def get_header2d(header3d: fits.Header) -> fits.Header:

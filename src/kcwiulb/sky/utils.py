@@ -91,12 +91,21 @@ def read_sky_map_iter2(path: str | Path) -> dict[str, list[dict[str, str]]]:
 
 
 def load_cube(path: str | Path) -> tuple[np.ndarray, fits.Header, np.ndarray]:
+    """Load a cube with flux in PRIMARY and uncertainty in the UNCERT extension."""
     path = Path(path)
+
     with fits.open(path) as hdul:
-        cube = hdul[0].data.copy()
+        data = np.asarray(hdul[0].data, dtype=float)
         header = hdul[0].header.copy()
         uncert = np.asarray(hdul["UNCERT"].data, dtype=float)
-    return cube, header, uncert
+
+    if data.shape != uncert.shape:
+        raise ValueError(
+            f"Flux/uncertainty shape mismatch in {path}: "
+            f"data={data.shape}, uncertainty={uncert.shape}"
+        )
+
+    return data, header, uncert
 
 
 def build_wavelength_axis(header: fits.Header, nw: int) -> np.ndarray:
@@ -206,7 +215,7 @@ def write_cube(
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
     hdu0 = fits.PrimaryHDU(data=data, header=header.copy())
-    hdu1 = fits.ImageHDU(data=uncert)
+    hdu1 = fits.ImageHDU(data=uncert, name="UNCERT")
     fits.HDUList([hdu0, hdu1]).writeto(output_path, overwrite=True)
     return output_path
 
