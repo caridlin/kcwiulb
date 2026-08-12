@@ -175,3 +175,68 @@ def crop_spectral_window_group(
         wavelength_min_actual=wl0,
         wavelength_max_actual=wl1,
     )
+
+def crop_multiple_spectral_windows_group(
+    flux_path: str | Path,
+    var_path: str | Path,
+    cov_data_path: str | Path,
+    windows: dict[str, tuple[float, float]],
+) -> dict[str, SpectralWindowResult]:
+    """
+    Crop multiple spectral windows from the same coadd products.
+
+    Parameters
+    ----------
+    flux_path
+        Flux cube path.
+
+    var_path
+        Variance cube path.
+
+    cov_data_path
+        Covariance data path.
+
+    windows
+        Dictionary of
+
+            label: (wavelength_min, wavelength_max)
+
+        Example:
+
+            {
+                "mgii": (3950, 4100),
+                "oii":  (5250, 5450),
+            }
+
+    Returns
+    -------
+    results
+        Dictionary mapping each label to its
+        SpectralWindowResult.
+    """
+
+    results = {}
+
+    for label, (
+        wavelength_min,
+        wavelength_max,
+    ) in windows.items():
+
+        print()
+        print(
+            f"[crop] {label}: "
+            f"{wavelength_min:.1f}-{wavelength_max:.1f} A"
+        )
+
+        result = crop_spectral_window_group(
+            flux_path=flux_path,
+            var_path=var_path,
+            cov_data_path=cov_data_path,
+            wavelength_min=wavelength_min,
+            wavelength_max=wavelength_max,
+            label=label,
+        )
+
+        results[label] = result
+
+    return results

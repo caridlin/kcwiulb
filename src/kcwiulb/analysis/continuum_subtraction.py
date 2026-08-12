@@ -287,3 +287,74 @@ def continuum_subtract_cube_pair(
         continuum_order=continuum_order,
         n_masked_channels=int(np.count_nonzero(~fit_mask)),
     )
+
+# ==========================================================
+# Multiple-window continuum subtraction
+# ==========================================================
+
+def continuum_subtract_multiple_cube_pairs(
+    flux_paths: dict[str, str | Path],
+    var_paths: dict[str, str | Path],
+    configs: dict[str, dict],
+) -> dict[str, ContinuumSubtractionResult]:
+    """
+    Continuum-subtract multiple cropped spectral windows.
+
+    Parameters
+    ----------
+    flux_paths
+        Dictionary:
+            label -> flux FITS path
+
+    var_paths
+        Dictionary:
+            label -> variance FITS path
+
+    configs
+        Dictionary:
+            label -> {
+                "continuum_order": int,
+                "line_mask": (wl0, wl1),
+                "extra_masks": [...],   # optional
+            }
+
+    Returns
+    -------
+    results
+        Dictionary:
+            label -> ContinuumSubtractionResult
+    """
+
+    results = {}
+
+    for label, config in configs.items():
+
+        print()
+        print(f"[continuum] {label}")
+
+        result = continuum_subtract_cube_pair(
+            flux_path=flux_paths[label],
+            var_path=var_paths[label],
+            continuum_order=config.get(
+                "continuum_order",
+                1,
+            ),
+            line_mask=config.get(
+                "line_mask",
+            ),
+            extra_masks=config.get(
+                "extra_masks",
+            ),
+            sigma_clip_value=config.get(
+                "sigma_clip_value",
+                3.0,
+            ),
+            niter=config.get(
+                "niter",
+                3,
+            ),
+        )
+
+        results[label] = result
+
+    return results
