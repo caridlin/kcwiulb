@@ -7,9 +7,14 @@ from kcwiulb.analysis.continuum_subtraction import (
 
 BASE = Path(__file__).resolve().parent
 
-CHANNEL = "blue"
-GROUP = "a"
-PRODUCT = "sky"
+# CHANNEL = "blue"
+# GROUP = "science"
+# PRODUCT = "sky"
+
+CHANNEL = "red"
+GROUP = "science"
+PRODUCT = "sky2"
+
 
 COADD_DIR = BASE / "coadd" / CHANNEL / GROUP
 
@@ -19,18 +24,21 @@ COADD_DIR = BASE / "coadd" / CHANNEL / GROUP
 # ==========================================================
 
 LABELS = [
-    "feii2626",
-    "mgii",
-    "oii",
+    # "feii2626",
+    # "mgii",
+    # "oii",
+    "hbeta",
+    "oiii",
+    "sii",
 ]
 
 FLUX_PATHS = {
-    label: COADD_DIR / f"coadd_{CHANNEL}_{GROUP}_{PRODUCT}.wc.{label}.fits"
+    label: COADD_DIR / f"coadd_{CHANNEL}_{GROUP}_{PRODUCT}_wavecorr.{label}.fits"
     for label in LABELS
 }
 
 VAR_PATHS = {
-    label: COADD_DIR / f"coadd_{CHANNEL}_{GROUP}_{PRODUCT}_var.wc.{label}.fits"
+    label: COADD_DIR / f"coadd_{CHANNEL}_{GROUP}_{PRODUCT}_var_wavecorr.{label}.fits"
     for label in LABELS
 }
 
@@ -40,21 +48,40 @@ VAR_PATHS = {
 # z_sys = 0.434400
 # ==========================================================
 
+# CONFIGS = {
+
+#     "feii2626": {
+#         "continuum_order": 2,
+#         "line_mask": (3755, 3780),
+#     },
+
+#     "mgii": {
+#         "continuum_order": 2,
+#         "line_mask": (3970, 4050),
+#     },
+
+#     "oii": {
+#         "continuum_order": 2,
+#         "line_mask": (5325, 5370),
+#     },
+
+# }
+
 CONFIGS = {
 
-    "feii2626": {
+    "hbeta": {
         "continuum_order": 2,
-        "line_mask": (3755, 3780),
+        "line_mask": (6945, 7000),
     },
 
-    "mgii": {
+    "oiii": {
         "continuum_order": 2,
-        "line_mask": (3970, 4050),
+        "line_mask": (7085, 7210),
     },
 
-    "oii": {
+    "sii": {
         "continuum_order": 2,
-        "line_mask": (5325, 5370),
+        "line_mask": (9600, 9675),
     },
 
 }

@@ -8,24 +8,37 @@ from kcwiulb.analysis.spectral_window import (
 BASE = Path(__file__).resolve().parent
 
 CHANNEL = "blue"
-GROUP = "a"
+GROUP = "science"
 PRODUCT = "sky"
+
+# CHANNEL = "red"
+# GROUP = "science"
+# PRODUCT = "sky2"
+
 
 COADD_DIR = BASE / "coadd" / CHANNEL / GROUP
 
-FLUX_PATH = COADD_DIR / f"coadd_{CHANNEL}_{GROUP}_{PRODUCT}.wc.fits"
-VAR_PATH = COADD_DIR / f"coadd_{CHANNEL}_{GROUP}_{PRODUCT}_var.wc.fits"
+FLUX_PATH = COADD_DIR / f"coadd_{CHANNEL}_{GROUP}_{PRODUCT}_wavecorr.fits"
+VAR_PATH = COADD_DIR / f"coadd_{CHANNEL}_{GROUP}_{PRODUCT}_var_wavecorr.fits"
 COV_DATA_PATH = COADD_DIR / f"coadd_{CHANNEL}_{GROUP}_{PRODUCT}_cov_data.npy"
 
 
 # ==========================================================
 # Spectral windows
+# z_sys = 0.434400
 # ==========================================================
 
 WINDOWS = {
-    "mgii": (3950, 4100),
-    "oii": (5250, 5450),
+    "feii2626": (3725, 3810),
+    "mgii":     (3920, 4080),
+    "oii":      (5280, 5410),
 }
+
+# WINDOWS = {
+#     "hbeta": (6900, 7040),
+#     "oiii":  (7060, 7230),
+#     "sii":   (9580, 9700),
+# }
 
 def main():
 
