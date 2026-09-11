@@ -57,6 +57,30 @@ def _weighted_stats_from_samples(
     values: list[np.ndarray],
     uncerts: list[np.ndarray],
 ) -> tuple[np.ndarray, np.ndarray] | tuple[None, None]:
+    """
+    Reproduce the median and uncertainty calculation used by the
+    original red-channel cosmic-ray masking code.
+
+    Parameters
+    ----------
+    values
+        Individual input-spaxel spectra contributing to one common-grid pixel.
+
+    uncerts
+        Corresponding uncertainty spectra.
+
+    Returns
+    -------
+    med
+        Median spectrum across all contributing individual spaxels.
+
+    sig
+        Uncertainty of the median:
+
+            sqrt(sum(sigma_i^2) * pi / (2 * (N - 1)))
+
+        matching the original implementation.
+    """
     if len(values) == 0:
         return None, None
 
@@ -73,7 +97,9 @@ def _weighted_stats_from_samples(
         return med, np.full_like(med, np.inf, dtype=float)
 
     sig = np.sqrt(
-        np.nansum(np.square(uarr), axis=0) * np.pi / (2.0 * (n - 1))
+        np.nansum(np.square(uarr), axis=0)
+        * np.pi
+        / (2.0 * (n - 1))
     )
 
     bad = ~np.isfinite(sig) | (sig <= 0)
@@ -92,24 +118,36 @@ def cosmic_ray_mask_red_group(
     suffix: str = ".cr.fits",
 ) -> RedCosmicRayResult:
     """
-    Identify cosmic rays in red-channel cubes using a common coadd-space comparison.
+    Identify cosmic rays in red-channel cubes using the original
+    common-coadd-pixel comparison algorithm.
 
-    For each pixel in a common WCS plane:
-    1. Collect overlapping spectra from all input cubes.
-    2. Build a median comparison spectrum.
-    3. Flag voxels in each contributing input spectrum where:
-           data > median + alpha * sigma_median
-       using the corresponding overlapping input spaxels.
+    For each pixel in the common WCS plane:
+
+    1. Project that common pixel into each input cube.
+    2. Find every individual input spaxel whose fractional overlap with
+       the projected common pixel is > px_thresh.
+    3. Collect the spectra and uncertainties from all such individual
+       input spaxels.
+    4. Compute the wavelength-by-wavelength median spectrum.
+    5. Compute the uncertainty of that median using the original formula.
+    6. Revisit every contributing individual input spaxel and flag:
+
+           abs(data - median) >= alpha * sigma_median
+
+    This intentionally reproduces the behavior of the original iter1
+    cosmic-ray rejection code rather than averaging overlapping spaxels
+    within each cube first.
 
     Notes
     -----
-    - This writes out a 3-HDU FITS file for each cube:
+    - Positive and negative outliers are both flagged, matching the
+      original code.
+    - Each input spaxel is tested individually.
+    - Only input spaxels with overlap > px_thresh contribute.
+    - Outputs contain:
         HDU 0: original flux cube
         HDU 1: original uncertainty cube
         HDU 2: cosmic-ray mask cube (0/1)
-    - The input flux is not modified here; only the mask is produced.
-    - By default, outputs are written next to each input cube.
-      If output_dir is given, all outputs are written there instead.
     """
     input_paths = _normalize_input_paths(input_paths)
 
@@ -118,8 +156,9 @@ def cosmic_ray_mask_red_group(
     print(f"[cosmic_ray_mask_red_group] alpha: {alpha}")
     print(f"[cosmic_ray_mask_red_group] PX_THRESH: {px_thresh}")
     print(f"[cosmic_ray_mask_red_group] N input cubes: {len(input_paths)}")
-    for i, p in enumerate(input_paths, start=1):
-        print(f"  Input {i:02d}: {p}")
+
+    for i, path in enumerate(input_paths, start=1):
+        print(f"  Input {i:02d}: {path}")
 
     cubes: list[np.ndarray] = []
     uncerts: list[np.ndarray] = []
@@ -128,13 +167,17 @@ def cosmic_ray_mask_red_group(
     pixel_boxes: list[list[list]] = []
 
     print("[cosmic_ray_mask_red_group] Loading cubes...")
+
     for i, path in enumerate(input_paths, start=1):
         data, header, uncert = load_cube(path)
+
         cubes.append(data)
         uncerts.append(uncert)
         headers.append(header)
         wcs2d.append(WCS(get_header2d(header)))
-        pixel_boxes.append(_precompute_pixel_boxes(data.shape[1], data.shape[2]))
+        pixel_boxes.append(
+            _precompute_pixel_boxes(data.shape[1], data.shape[2])
+        )
 
         print(
             f"  Loaded {i:02d}/{len(input_paths)} | "
@@ -143,6 +186,7 @@ def cosmic_ray_mask_red_group(
         )
 
     print("[cosmic_ray_mask_red_group] Building common WCS/header...")
+
     common_hdr, common_wcs, _, _ = build_common_header(headers, pa=pa)
     common_size_y = common_hdr["NAXIS2"]
     common_size_x = common_hdr["NAXIS1"]
@@ -152,29 +196,60 @@ def cosmic_ray_mask_red_group(
     print(f"  NAXIS2 = {common_size_y}")
 
     print("[cosmic_ray_mask_red_group] Precomputing coadd pixel footprints...")
-    common_pixel_radec = _precompute_coadd_pixel_radec(common_wcs, common_size_y, common_size_x)
 
-    cr_masks = [np.zeros_like(cube, dtype=bool) for cube in cubes]
+    common_pixel_radec = _precompute_coadd_pixel_radec(
+        common_wcs,
+        common_size_y,
+        common_size_x,
+    )
+
+    cr_masks = [
+        np.zeros_like(cube, dtype=bool)
+        for cube in cubes
+    ]
 
     print("[cosmic_ray_mask_red_group] Starting main loop...")
+
     import time
     loop_start = time.time()
 
     for y_j in range(common_size_y):
-        _print_row_progress(y_j, common_size_y, loop_start, every=5)
+        _print_row_progress(
+            y_j,
+            common_size_y,
+            loop_start,
+            every=5,
+        )
 
         for x_k in range(common_size_x):
             pixel_common_radec = common_pixel_radec[y_j][x_k]
 
+            # ------------------------------------------------
+            # Collect every individual input spaxel whose
+            # overlap with this common-grid pixel exceeds
+            # px_thresh.
+            #
+            # This matches the OLD iter1 behavior.
+            # ------------------------------------------------
             contributors: list[dict] = []
 
             for i, cube in enumerate(cubes):
                 pixel_common_proj = shapely_polygon(
-                    wcs2d[i].all_world2pix(pixel_common_radec, 0)
+                    wcs2d[i].all_world2pix(
+                        pixel_common_radec,
+                        0,
+                    )
                 )
-                region_bounds = list(pixel_common_proj.exterior.bounds)
 
-                xb0, yb0, xb1, yb1 = (int(round(v)) for v in region_bounds)
+                region_bounds = list(
+                    pixel_common_proj.exterior.bounds
+                )
+
+                xb0, yb0, xb1, yb1 = (
+                    int(round(v))
+                    for v in region_bounds
+                )
+
                 xb0 = max(xb0, 0)
                 yb0 = max(yb0, 0)
                 xb1 = min(xb1 + 1, cube.shape[2])
@@ -183,82 +258,134 @@ def cosmic_ray_mask_red_group(
                 if not (xb0 < xb1 and yb0 < yb1):
                     continue
 
-                overlap_tot = 0.0
-                spec_sum = np.zeros(cube.shape[0], dtype=float)
-                var_sum = np.zeros(cube.shape[0], dtype=float)
-                overlapping_pixels: list[tuple[int, int, float]] = []
-
                 for y_i in range(yb0, yb1):
                     for x_i in range(xb0, xb1):
                         pixel = pixel_boxes[i][y_i][x_i]
-                        overlap = pixel_common_proj.intersection(pixel).area / pixel.area
-                        if overlap <= 0:
+
+                        overlap = (
+                            pixel_common_proj.intersection(pixel).area
+                            / pixel.area
+                        )
+
+                        # OLD behavior:
+                        # require EACH input pixel independently
+                        # to exceed px_thresh.
+                        if overlap <= px_thresh:
                             continue
 
-                        overlap_tot += overlap
-                        overlapping_pixels.append((y_i, x_i, overlap))
-                        spec_sum += overlap * cube[:, y_i, x_i]
-                        var_sum += np.square(overlap * uncerts[i][:, y_i, x_i])
+                        contributors.append(
+                            {
+                                "cube_index": i,
+                                "y": y_i,
+                                "x": x_i,
+                                "spec": cube[:, y_i, x_i],
+                                "uncert": uncerts[i][:, y_i, x_i],
+                                "overlap": overlap,
+                            }
+                        )
 
-                if overlap_tot <= px_thresh:
-                    continue
-
-                spec = spec_sum / overlap_tot
-                spec_uncert = np.sqrt(var_sum) / overlap_tot
-
-                contributors.append(
-                    {
-                        "cube_index": i,
-                        "spec": spec,
-                        "spec_uncert": spec_uncert,
-                        "pixels": overlapping_pixels,
-                    }
-                )
-
+            # Need at least two individual spectra to define
+            # the comparison statistics.
             if len(contributors) < 2:
                 continue
 
-            all_specs = [c["spec"] for c in contributors]
-            all_uncerts = [c["spec_uncert"] for c in contributors]
+            # ------------------------------------------------
+            # OLD behavior:
+            #
+            # The median is computed from every individual
+            # overlapping input spaxel, NOT one averaged
+            # spectrum per cube.
+            # ------------------------------------------------
+            all_specs = [
+                contributor["spec"]
+                for contributor in contributors
+            ]
 
-            med_spec, med_uncert = _weighted_stats_from_samples(all_specs, all_uncerts)
+            all_uncerts = [
+                contributor["uncert"]
+                for contributor in contributors
+            ]
+
+            med_spec, med_uncert = _weighted_stats_from_samples(
+                all_specs,
+                all_uncerts,
+            )
+
             if med_spec is None:
                 continue
 
-            threshold = med_spec + alpha * med_uncert
-
+            # ------------------------------------------------
+            # OLD iter1 CR criterion:
+            #
+            # abs(data - median) >= alpha * sigma_median
+            #
+            # Test each individual input spaxel separately.
+            # ------------------------------------------------
             for contributor in contributors:
                 cube_index = contributor["cube_index"]
+                y_i = contributor["y"]
+                x_i = contributor["x"]
                 spec = contributor["spec"]
-                bad_lambda = spec > threshold
+
+                bad_lambda = (
+                    np.abs(spec - med_spec)
+                    >= alpha * med_uncert
+                )
 
                 if not np.any(bad_lambda):
                     continue
 
-                for y_i, x_i, _ in contributor["pixels"]:
-                    cr_masks[cube_index][:, y_i, x_i] |= bad_lambda
+                cr_masks[cube_index][:, y_i, x_i] |= bad_lambda
 
-    masked_per_cube = [int(mask.sum()) for mask in cr_masks]
-    n_masked_total = int(sum(masked_per_cube))
+    masked_per_cube = [
+        int(mask.sum())
+        for mask in cr_masks
+    ]
+
+    n_masked_total = int(
+        sum(masked_per_cube)
+    )
 
     if output_dir is not None:
         output_dir = Path(output_dir)
-        output_dir.mkdir(parents=True, exist_ok=True)
+        output_dir.mkdir(
+            parents=True,
+            exist_ok=True,
+        )
 
     output_paths: list[Path] = []
 
     print("[cosmic_ray_mask_red_group] Writing outputs...")
-    for path, cube, header, uncert, mask in zip(input_paths, cubes, headers, uncerts, cr_masks):
-        if output_dir is None:
-            out_path = path.with_name(path.stem + suffix)
-        else:
-            out_path = output_dir / f"{path.stem}{suffix}"
 
-        write_cr_masked_cube(out_path, cube, header, uncert, mask)
+    for path, cube, header, uncert, mask in zip(
+        input_paths,
+        cubes,
+        headers,
+        uncerts,
+        cr_masks,
+    ):
+        if output_dir is None:
+            out_path = path.with_name(
+                path.stem + suffix
+            )
+        else:
+            out_path = output_dir / (
+                f"{path.stem}{suffix}"
+            )
+
+        write_cr_masked_cube(
+            out_path,
+            cube,
+            header,
+            uncert,
+            mask,
+        )
+
         output_paths.append(out_path)
 
         print(
-            f"  Wrote: {out_path} | masked voxels = {int(mask.sum())}",
+            f"  Wrote: {out_path} | "
+            f"masked voxels = {int(mask.sum())}",
             flush=True,
         )
 
@@ -275,5 +402,8 @@ def cosmic_ray_mask_red_group(
         pa=pa,
         n_masked_total=n_masked_total,
         masked_per_cube=masked_per_cube,
-        common_shape=(common_size_y, common_size_x),
+        common_shape=(
+            common_size_y,
+            common_size_x,
+        ),
     )

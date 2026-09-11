@@ -15,9 +15,24 @@ CHANNEL = "red"
 MASTER_FILELIST = BASE / "master_filelist_red.txt"
 
 PA = 125
-ALPHA = 5.0  # sigma threshold for cosmic ray detection
-BETA = 5.0   # protects bright lines / sources from being misidentified as cosmic rays
+ALPHA = 5.0   # CR threshold for low-S/N voxels
+BETA = 5.0    # S/N boundary between low- and high-S/N voxels
+GAMMA = 15.0  # stricter CR threshold for high-S/N / bright-source voxels
 PX_THRESH = 0.1
+
+# ------------------------------------------------------------
+# OPTIONAL QSO PROTECTION
+#
+# Set all three to None to disable.
+# Example:
+#
+# QSO_RA_DEG = 275.482833072
+# QSO_DEC_DEG = 64.342278482
+# QSO_PROTECT_RADIUS_ARCSEC = 0.8
+# ------------------------------------------------------------
+QSO_RA_DEG = None
+QSO_DEC_DEG = None
+QSO_PROTECT_RADIUS_ARCSEC = None
 
 # ------------------------------------------------------------
 # GROUP SELECTION
@@ -144,7 +159,11 @@ def main():
     print(f"  PA: {PA}")
     print(f"  ALPHA: {ALPHA}")
     print(f"  BETA: {BETA}")
+    print(f"  GAMMA: {GAMMA}")
     print(f"  PX_THRESH: {PX_THRESH}")
+    print(f"  QSO_RA_DEG: {QSO_RA_DEG}")
+    print(f"  QSO_DEC_DEG: {QSO_DEC_DEG}")
+    print(f"  QSO_PROTECT_RADIUS_ARCSEC: {QSO_PROTECT_RADIUS_ARCSEC}")
     print(f"  GROUP_SUFFIXES_TO_RUN: {GROUP_SUFFIXES_TO_RUN}")
     print(f"  OFFSETS_TO_RUN: {OFFSETS_TO_RUN}")
     print(f"  FIELDS_TO_EXCLUDE: {FIELDS_TO_EXCLUDE}")
@@ -182,7 +201,11 @@ def main():
                 pa=PA,
                 alpha=ALPHA,
                 beta=BETA,
+                gamma=GAMMA,
                 px_thresh=PX_THRESH,
+                qso_ra_deg=QSO_RA_DEG,
+                qso_dec_deg=QSO_DEC_DEG,
+                qso_protect_radius_arcsec=QSO_PROTECT_RADIUS_ARCSEC,
                 output_dir=None,
                 suffix=OUTPUT_SUFFIX,
             )
