@@ -223,6 +223,328 @@ def plot_blue_iter1_diagnostics(
         plt.close(fig4)
 
 
+def plot_blue_selfsky_iter1_diagnostics(
+    result,
+    savepath: str | Path | None = None,
+    show: bool = False,
+    whiteband_vmin: float = -1,
+    whiteband_vmax: float = 80,
+    residual_zoom_ylim: tuple[float, float] = (-0.002, 0.002),
+) -> None:
+    """
+    Save blue self-sky diagnostics as a multi-page PDF.
+
+    Pages:
+    1. White-band image, source mask, and final sky mask
+    2. Extracted self-sky spectrum
+    3. Sky spectrum and post-subtraction residual
+    4. Zoomed residual spectrum
+
+    Mask convention:
+        source_mask = True for pixels excluded by the QSO/source radius
+        sky_mask    = True for all pixels excluded from the sky estimate
+
+    Therefore ~sky_mask gives the pixels actually used to construct
+    the self-sky spectrum.
+    """
+    pdf = None
+
+    if savepath is not None:
+        savepath = Path(savepath)
+        savepath.parent.mkdir(parents=True, exist_ok=True)
+        pdf = PdfPages(savepath.with_suffix(".pdf"))
+
+    # ========================================================
+    # PAGE 1 — spatial sky selection
+    # ========================================================
+    fig1 = plt.figure(figsize=(11, 5))
+
+    # --------------------------------------------------------
+    # White-band image
+    # --------------------------------------------------------
+    ax = plt.subplot(1, 3, 1)
+
+    ax.imshow(
+        result.whiteband,
+        origin="lower",
+        cmap="RdBu_r",
+        aspect=0.2,
+        vmin=whiteband_vmin,
+        vmax=whiteband_vmax,
+    )
+
+    ax.scatter(
+        result.qso_x,
+        result.qso_y,
+        marker="+",
+        s=100,
+        linewidths=1.5,
+        c="k",
+    )
+
+    ax.set_title("Science white-band")
+    ax.set_xlabel("x")
+    ax.set_ylabel("y")
+
+    # --------------------------------------------------------
+    # QSO/source exclusion mask
+    #
+    # True = excluded because it lies within the requested
+    # source-protection radius.
+    # --------------------------------------------------------
+    ax = plt.subplot(1, 3, 2)
+
+    ax.imshow(
+        result.source_mask,
+        origin="lower",
+        cmap="gray",
+        aspect=0.2,
+        vmin=0,
+        vmax=1,
+    )
+
+    ax.scatter(
+        result.qso_x,
+        result.qso_y,
+        marker="+",
+        s=100,
+        linewidths=1.5,
+        c="r",
+    )
+
+    ax.set_title(
+        f"Source mask\n"
+        f"R = {result.source_mask_radius_arcsec:.1f}\""
+    )
+    ax.set_xlabel("x")
+    ax.set_ylabel("y")
+
+    # --------------------------------------------------------
+    # Final pixels used for self-sky
+    #
+    # sky_mask:
+    #   True  = excluded
+    #   False = used for sky
+    #
+    # Display ~sky_mask so white pixels are the actual pixels
+    # contributing to the sky spectrum.
+    # --------------------------------------------------------
+    ax = plt.subplot(1, 3, 3)
+
+    sky_used = ~result.sky_mask
+
+    ax.imshow(
+        sky_used,
+        origin="lower",
+        cmap="gray",
+        aspect=0.2,
+        vmin=0,
+        vmax=1,
+    )
+
+    ax.scatter(
+        result.qso_x,
+        result.qso_y,
+        marker="+",
+        s=100,
+        linewidths=1.5,
+        c="r",
+    )
+
+    n_total = result.sky_mask.size
+    n_sky = np.count_nonzero(sky_used)
+    sky_fraction = n_sky / n_total
+
+    ax.set_title(
+        f"Pixels used for sky\n"
+        f"N = {n_sky}/{n_total} ({sky_fraction:.1%})"
+    )
+    ax.set_xlabel("x")
+    ax.set_ylabel("y")
+
+    fig1.suptitle(
+        f"Blue self-sky spatial selection: {result.science_path.name}",
+        fontsize=12,
+    )
+
+    plt.tight_layout(rect=[0, 0, 1, 0.94])
+
+    if pdf is not None:
+        pdf.savefig(fig1)
+        plt.close(fig1)
+    elif show:
+        plt.show()
+    else:
+        plt.close(fig1)
+
+    # ========================================================
+    # PAGE 2 — extracted self-sky spectrum
+    # ========================================================
+    fig2 = plt.figure(figsize=(9, 4))
+    ax = plt.gca()
+
+    ax.plot(
+        result.wavelength,
+        result.sky_spec,
+        label="self-sky",
+        lw=1.0,
+    )
+
+    finite_uncert = np.isfinite(result.sky_uncert)
+
+    if np.any(finite_uncert):
+        lower = result.sky_spec - result.sky_uncert
+        upper = result.sky_spec + result.sky_uncert
+
+        ax.fill_between(
+            result.wavelength,
+            lower,
+            upper,
+            where=finite_uncert,
+            alpha=0.2,
+            label="±1σ",
+        )
+
+    ax.axvline(
+        x=result.wavgood0,
+        c="k",
+        linestyle="--",
+        alpha=0.7,
+        label="WAVGOOD0",
+    )
+
+    ax.axvline(
+        x=result.wavgood1,
+        c="k",
+        linestyle="--",
+        alpha=0.7,
+        label="WAVGOOD1",
+    )
+
+    ax.legend(loc="upper right", fontsize=9)
+
+    ax.set_title("Extracted self-sky spectrum")
+    ax.set_xlabel("Wavelength")
+    ax.set_ylabel("Flux")
+
+    plt.tight_layout()
+
+    if pdf is not None:
+        pdf.savefig(fig2)
+        plt.close(fig2)
+    elif show:
+        plt.show()
+    else:
+        plt.close(fig2)
+
+    # ========================================================
+    # PAGE 3 — sky spectrum + residual
+    # ========================================================
+    fig3 = plt.figure(figsize=(9, 4))
+    ax = plt.gca()
+
+    ax.plot(
+        result.wavelength,
+        result.sky_spec,
+        label="self-sky",
+        lw=1.0,
+    )
+
+    ax.plot(
+        result.wavelength,
+        result.residual_spec,
+        label="post-subtraction sky residual",
+        lw=1.0,
+    )
+
+    ax.axhline(
+        0,
+        c="k",
+        linestyle=":",
+        alpha=0.7,
+    )
+
+    ax.axvline(
+        x=result.wavgood0,
+        c="k",
+        linestyle="--",
+        alpha=0.7,
+    )
+
+    ax.axvline(
+        x=result.wavgood1,
+        c="k",
+        linestyle="--",
+        alpha=0.7,
+    )
+
+    ax.legend(loc="upper right", fontsize=9)
+
+    ax.set_title("Self-sky subtraction")
+    ax.set_xlabel("Wavelength")
+    ax.set_ylabel("Flux")
+
+    plt.tight_layout()
+
+    if pdf is not None:
+        pdf.savefig(fig3)
+        plt.close(fig3)
+    elif show:
+        plt.show()
+    else:
+        plt.close(fig3)
+
+    # ========================================================
+    # PAGE 4 — zoomed residual
+    # ========================================================
+    fig4 = plt.figure(figsize=(9, 2.5))
+    ax = plt.gca()
+
+    ax.plot(
+        result.wavelength,
+        result.residual_spec,
+        lw=1.0,
+    )
+
+    ax.axhline(
+        0,
+        c="k",
+        linestyle=":",
+        alpha=0.7,
+    )
+
+    ax.axvline(
+        x=result.wavgood0,
+        c="k",
+        linestyle="--",
+        alpha=0.7,
+    )
+
+    ax.axvline(
+        x=result.wavgood1,
+        c="k",
+        linestyle="--",
+        alpha=0.7,
+    )
+
+    ax.set_ylim(residual_zoom_ylim)
+
+    ax.set_title("Post-subtraction sky residual (zoomed)")
+    ax.set_xlabel("Wavelength")
+    ax.set_ylabel("Flux")
+
+    plt.tight_layout()
+
+    if pdf is not None:
+        pdf.savefig(fig4)
+        plt.close(fig4)
+        pdf.close()
+    elif show:
+        plt.show()
+    else:
+        plt.close(fig4)
+
+
 def plot_blue_iter2_diagnostics(
     result,
     savepath: str | Path | None = None,
@@ -1096,3 +1418,588 @@ def plot_red_iter3_diagnostics(
         plt.show()
     else:
         plt.close(fig4)
+
+
+def plot_red_selfsky_iter1_diagnostics(
+    result,
+    savepath: str | Path | None = None,
+    show: bool = False,
+    whiteband_vmin: float = -1,
+    whiteband_vmax: float = 80,
+    residual_zoom_ylim: tuple[float, float] = (-0.002, 0.002),
+) -> None:
+    """
+    Save red self-sky iter1 diagnostics as a multi-page PDF.
+
+    Pages:
+    1. White-band image, QSO/source mask, and pixels used for sky
+    2. Extracted self-sky spectrum
+    3. Self-sky spectrum and post-subtraction residual
+    4. Zoomed residual spectrum
+
+    Mask convention:
+        source_mask = True inside the QSO/source exclusion region
+        bright_mask = True for additional sigma-clipped sources
+        sky_mask    = source_mask | bright_mask
+
+    Therefore ~sky_mask gives the spatial pixels used to construct
+    the iter1 self-sky spectrum.
+    """
+    pdf = None
+
+    if savepath is not None:
+        savepath = Path(savepath)
+        savepath.parent.mkdir(parents=True, exist_ok=True)
+        pdf = PdfPages(savepath.with_suffix(".pdf"))
+
+    # ========================================================
+    # PAGE 1 — spatial self-sky selection
+    # ========================================================
+    fig1 = plt.figure(figsize=(11, 5))
+
+    ax = plt.subplot(1, 3, 1)
+    ax.imshow(
+        result.whiteband,
+        origin="lower",
+        cmap="RdBu_r",
+        aspect=0.2,
+        vmin=whiteband_vmin,
+        vmax=whiteband_vmax,
+    )
+    ax.scatter(
+        result.qso_x,
+        result.qso_y,
+        marker="+",
+        s=100,
+        linewidths=1.5,
+        c="k",
+    )
+    ax.set_title("Science white-band")
+    ax.set_xlabel("x")
+    ax.set_ylabel("y")
+
+    ax = plt.subplot(1, 3, 2)
+    ax.imshow(
+        result.source_mask,
+        origin="lower",
+        cmap="gray",
+        aspect=0.2,
+        vmin=0,
+        vmax=1,
+    )
+    ax.scatter(
+        result.qso_x,
+        result.qso_y,
+        marker="+",
+        s=100,
+        linewidths=1.5,
+        c="r",
+    )
+    ax.set_title(
+        f"Source mask\n"
+        f"R = {result.source_mask_radius_arcsec:.1f}\""
+    )
+    ax.set_xlabel("x")
+    ax.set_ylabel("y")
+
+    ax = plt.subplot(1, 3, 3)
+
+    sky_used = ~result.sky_mask
+    n_total = result.sky_mask.size
+    n_sky = np.count_nonzero(sky_used)
+
+    ax.imshow(
+        sky_used,
+        origin="lower",
+        cmap="gray",
+        aspect=0.2,
+        vmin=0,
+        vmax=1,
+    )
+    ax.scatter(
+        result.qso_x,
+        result.qso_y,
+        marker="+",
+        s=100,
+        linewidths=1.5,
+        c="r",
+    )
+    ax.set_title(
+        f"Pixels used for sky\n"
+        f"N = {n_sky}/{n_total} ({n_sky / n_total:.1%})"
+    )
+    ax.set_xlabel("x")
+    ax.set_ylabel("y")
+
+    fig1.suptitle(
+        f"Red self-sky iter1 spatial selection: {result.science_path.name}",
+        fontsize=12,
+    )
+
+    plt.tight_layout(rect=[0, 0, 1, 0.94])
+
+    if pdf is not None:
+        pdf.savefig(fig1)
+        plt.close(fig1)
+    elif show:
+        plt.show()
+    else:
+        plt.close(fig1)
+
+    # ========================================================
+    # PAGE 2 — extracted self-sky spectrum
+    # ========================================================
+    fig2 = plt.figure(figsize=(9, 4))
+    ax = plt.gca()
+
+    ax.plot(
+        result.wavelength,
+        result.sky_spec,
+        label="self-sky",
+        lw=1.0,
+    )
+
+    finite_uncert = np.isfinite(result.sky_uncert)
+
+    if np.any(finite_uncert):
+        lower = result.sky_spec - result.sky_uncert
+        upper = result.sky_spec + result.sky_uncert
+
+        ax.fill_between(
+            result.wavelength,
+            lower,
+            upper,
+            where=finite_uncert,
+            alpha=0.2,
+            label="±1σ",
+        )
+
+    ax.axvline(
+        result.wavgood0,
+        c="k",
+        linestyle="--",
+        alpha=0.7,
+        label="WAVGOOD0",
+    )
+    ax.axvline(
+        result.wavgood1,
+        c="k",
+        linestyle="--",
+        alpha=0.7,
+        label="WAVGOOD1",
+    )
+
+    ax.legend(loc="upper right", fontsize=9)
+    ax.set_title("Red iter1 extracted self-sky spectrum")
+    ax.set_xlabel("Wavelength")
+    ax.set_ylabel("Flux")
+
+    plt.tight_layout()
+
+    if pdf is not None:
+        pdf.savefig(fig2)
+        plt.close(fig2)
+    elif show:
+        plt.show()
+    else:
+        plt.close(fig2)
+
+    # ========================================================
+    # PAGE 3 — sky + residual
+    # ========================================================
+    fig3 = plt.figure(figsize=(9, 4))
+    ax = plt.gca()
+
+    ax.plot(
+        result.wavelength,
+        result.sky_spec,
+        label="self-sky",
+        lw=1.0,
+    )
+    ax.plot(
+        result.wavelength,
+        result.residual_spec,
+        label="post-subtraction sky residual",
+        lw=1.0,
+    )
+
+    ax.axhline(0, c="k", linestyle=":", alpha=0.7)
+    ax.axvline(result.wavgood0, c="k", linestyle="--", alpha=0.7)
+    ax.axvline(result.wavgood1, c="k", linestyle="--", alpha=0.7)
+
+    ax.legend(loc="upper right", fontsize=9)
+    ax.set_title("Red self-sky iter1 subtraction")
+    ax.set_xlabel("Wavelength")
+    ax.set_ylabel("Flux")
+
+    plt.tight_layout()
+
+    if pdf is not None:
+        pdf.savefig(fig3)
+        plt.close(fig3)
+    elif show:
+        plt.show()
+    else:
+        plt.close(fig3)
+
+    # ========================================================
+    # PAGE 4 — zoomed residual
+    # ========================================================
+    fig4 = plt.figure(figsize=(9, 2.5))
+    ax = plt.gca()
+
+    ax.plot(
+        result.wavelength,
+        result.residual_spec,
+        lw=1.0,
+    )
+
+    ax.axhline(0, c="k", linestyle=":", alpha=0.7)
+    ax.axvline(result.wavgood0, c="k", linestyle="--", alpha=0.7)
+    ax.axvline(result.wavgood1, c="k", linestyle="--", alpha=0.7)
+
+    ax.set_ylim(residual_zoom_ylim)
+    ax.set_title("Red self-sky iter1 residual (zoomed)")
+    ax.set_xlabel("Wavelength")
+    ax.set_ylabel("Flux")
+
+    plt.tight_layout()
+
+    if pdf is not None:
+        pdf.savefig(fig4)
+        plt.close(fig4)
+        pdf.close()
+    elif show:
+        plt.show()
+    else:
+        plt.close(fig4)
+
+
+def plot_red_selfsky_iter2_diagnostics(
+    result,
+    savepath: str | Path | None = None,
+    show: bool = False,
+    whiteband_vmin: float = -1,
+    whiteband_vmax: float = 80,
+    residual_zoom_ylim: tuple[float, float] = (-0.002, 0.002),
+) -> None:
+    """
+    Save red self-sky iter2 diagnostics as a multi-page PDF.
+
+    Iter2 goes back to the original unsubtracted cube and rebuilds the
+    self-sky spectrum while excluding CR voxels identified after iter1.
+
+    Pages:
+    1. White-band image, spatial source mask, and spatial sky pixels
+    2. CR-mask diagnostics
+    3. Improved iter2 self-sky spectrum
+    4. Self-sky spectrum and post-subtraction residual
+    5. Zoomed residual spectrum
+    """
+    pdf = None
+
+    if savepath is not None:
+        savepath = Path(savepath)
+        savepath.parent.mkdir(parents=True, exist_ok=True)
+        pdf = PdfPages(savepath.with_suffix(".pdf"))
+
+    # ========================================================
+    # PAGE 1 — spatial self-sky selection
+    # ========================================================
+    fig1 = plt.figure(figsize=(11, 5))
+
+    ax = plt.subplot(1, 3, 1)
+    ax.imshow(
+        result.whiteband,
+        origin="lower",
+        cmap="RdBu_r",
+        aspect=0.2,
+        vmin=whiteband_vmin,
+        vmax=whiteband_vmax,
+    )
+    ax.scatter(
+        result.qso_x,
+        result.qso_y,
+        marker="+",
+        s=100,
+        linewidths=1.5,
+        c="k",
+    )
+    ax.set_title("Iter1-subtracted white-band")
+    ax.set_xlabel("x")
+    ax.set_ylabel("y")
+
+    ax = plt.subplot(1, 3, 2)
+    ax.imshow(
+        result.source_mask,
+        origin="lower",
+        cmap="gray",
+        aspect=0.2,
+        vmin=0,
+        vmax=1,
+    )
+    ax.scatter(
+        result.qso_x,
+        result.qso_y,
+        marker="+",
+        s=100,
+        linewidths=1.5,
+        c="r",
+    )
+    ax.set_title(
+        f"Source mask\n"
+        f"R = {result.source_mask_radius_arcsec:.1f}\""
+    )
+    ax.set_xlabel("x")
+    ax.set_ylabel("y")
+
+    ax = plt.subplot(1, 3, 3)
+
+    sky_used = ~result.sky_mask_2d
+    n_total = result.sky_mask_2d.size
+    n_sky = np.count_nonzero(sky_used)
+
+    ax.imshow(
+        sky_used,
+        origin="lower",
+        cmap="gray",
+        aspect=0.2,
+        vmin=0,
+        vmax=1,
+    )
+    ax.scatter(
+        result.qso_x,
+        result.qso_y,
+        marker="+",
+        s=100,
+        linewidths=1.5,
+        c="r",
+    )
+    ax.set_title(
+        f"Spatial pixels available for sky\n"
+        f"N = {n_sky}/{n_total} ({n_sky / n_total:.1%})"
+    )
+    ax.set_xlabel("x")
+    ax.set_ylabel("y")
+
+    fig1.suptitle(
+        f"Red self-sky iter2 spatial selection: {result.science_path.name}",
+        fontsize=12,
+    )
+
+    plt.tight_layout(rect=[0, 0, 1, 0.94])
+
+    if pdf is not None:
+        pdf.savefig(fig1)
+        plt.close(fig1)
+    elif show:
+        plt.show()
+    else:
+        plt.close(fig1)
+
+    # ========================================================
+    # PAGE 2 — CR mask diagnostics
+    #
+    # CR masking is 3D, so collapse along wavelength:
+    #
+    #   left: number of CR-masked wavelengths per spaxel
+    #   right: fraction of wavelengths retained in final
+    #          self-sky estimate
+    # ========================================================
+    fig2 = plt.figure(figsize=(10, 5))
+
+    cr_count = np.sum(
+        result.cr_mask_3d,
+        axis=0,
+    )
+
+    ax = plt.subplot(1, 2, 1)
+    im = ax.imshow(
+        cr_count,
+        origin="lower",
+        aspect=0.2,
+    )
+    ax.scatter(
+        result.qso_x,
+        result.qso_y,
+        marker="+",
+        s=100,
+        linewidths=1.5,
+        c="r",
+    )
+    ax.set_title(
+        f"CR-masked wavelengths per spaxel\n"
+        f"Total CR voxels = {int(result.cr_mask_3d.sum())}"
+    )
+    ax.set_xlabel("x")
+    ax.set_ylabel("y")
+    plt.colorbar(im, ax=ax, label="N masked wavelengths")
+
+    valid_fraction = np.mean(
+        ~result.master_mask_3d,
+        axis=0,
+    )
+
+    ax = plt.subplot(1, 2, 2)
+    im = ax.imshow(
+        valid_fraction,
+        origin="lower",
+        aspect=0.2,
+        vmin=0,
+        vmax=1,
+    )
+    ax.scatter(
+        result.qso_x,
+        result.qso_y,
+        marker="+",
+        s=100,
+        linewidths=1.5,
+        c="r",
+    )
+    ax.set_title("Fraction of wavelengths usable for self-sky")
+    ax.set_xlabel("x")
+    ax.set_ylabel("y")
+    plt.colorbar(im, ax=ax, label="Valid fraction")
+
+    fig2.suptitle(
+        "Red self-sky iter2 CR masking",
+        fontsize=12,
+    )
+
+    plt.tight_layout(rect=[0, 0, 1, 0.94])
+
+    if pdf is not None:
+        pdf.savefig(fig2)
+        plt.close(fig2)
+    elif show:
+        plt.show()
+    else:
+        plt.close(fig2)
+
+    # ========================================================
+    # PAGE 3 — improved self-sky spectrum
+    # ========================================================
+    fig3 = plt.figure(figsize=(9, 4))
+    ax = plt.gca()
+
+    ax.plot(
+        result.wavelength,
+        result.sky_spec,
+        label="iter2 self-sky",
+        lw=1.0,
+    )
+
+    finite_uncert = np.isfinite(result.sky_uncert)
+
+    if np.any(finite_uncert):
+        lower = result.sky_spec - result.sky_uncert
+        upper = result.sky_spec + result.sky_uncert
+
+        ax.fill_between(
+            result.wavelength,
+            lower,
+            upper,
+            where=finite_uncert,
+            alpha=0.2,
+            label="±1σ",
+        )
+
+    ax.axvline(
+        result.wavgood0,
+        c="k",
+        linestyle="--",
+        alpha=0.7,
+        label="WAVGOOD0",
+    )
+    ax.axvline(
+        result.wavgood1,
+        c="k",
+        linestyle="--",
+        alpha=0.7,
+        label="WAVGOOD1",
+    )
+
+    ax.legend(loc="upper right", fontsize=9)
+    ax.set_title("Red iter2 improved self-sky spectrum")
+    ax.set_xlabel("Wavelength")
+    ax.set_ylabel("Flux")
+
+    plt.tight_layout()
+
+    if pdf is not None:
+        pdf.savefig(fig3)
+        plt.close(fig3)
+    elif show:
+        plt.show()
+    else:
+        plt.close(fig3)
+
+    # ========================================================
+    # PAGE 4 — sky + residual
+    # ========================================================
+    fig4 = plt.figure(figsize=(9, 4))
+    ax = plt.gca()
+
+    ax.plot(
+        result.wavelength,
+        result.sky_spec,
+        label="iter2 self-sky",
+        lw=1.0,
+    )
+    ax.plot(
+        result.wavelength,
+        result.residual_spec,
+        label="post-subtraction sky residual",
+        lw=1.0,
+    )
+
+    ax.axhline(0, c="k", linestyle=":", alpha=0.7)
+    ax.axvline(result.wavgood0, c="k", linestyle="--", alpha=0.7)
+    ax.axvline(result.wavgood1, c="k", linestyle="--", alpha=0.7)
+
+    ax.legend(loc="upper right", fontsize=9)
+    ax.set_title("Red self-sky iter2 subtraction")
+    ax.set_xlabel("Wavelength")
+    ax.set_ylabel("Flux")
+
+    plt.tight_layout()
+
+    if pdf is not None:
+        pdf.savefig(fig4)
+        plt.close(fig4)
+    elif show:
+        plt.show()
+    else:
+        plt.close(fig4)
+
+    # ========================================================
+    # PAGE 5 — zoomed residual
+    # ========================================================
+    fig5 = plt.figure(figsize=(9, 2.5))
+    ax = plt.gca()
+
+    ax.plot(
+        result.wavelength,
+        result.residual_spec,
+        lw=1.0,
+    )
+
+    ax.axhline(0, c="k", linestyle=":", alpha=0.7)
+    ax.axvline(result.wavgood0, c="k", linestyle="--", alpha=0.7)
+    ax.axvline(result.wavgood1, c="k", linestyle="--", alpha=0.7)
+
+    ax.set_ylim(residual_zoom_ylim)
+    ax.set_title("Red self-sky iter2 residual (zoomed)")
+    ax.set_xlabel("Wavelength")
+    ax.set_ylabel("Flux")
+
+    plt.tight_layout()
+
+    if pdf is not None:
+        pdf.savefig(fig5)
+        plt.close(fig5)
+        pdf.close()
+    elif show:
+        plt.show()
+    else:
+        plt.close(fig5)
