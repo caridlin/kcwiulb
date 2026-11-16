@@ -15,7 +15,9 @@ This pipeline has been used in several published works, including:
   Z. Lin et al. 2025, *The Astrophysical Journal*, 995, 12  
 
 A detailed description of the methodology is presented in  
-*A Framework for Ultra--Low Surface Brightness IFU Emission Mapping with KCWI* (in preparation).
+*A Framework for Ultralow Surface-brightness Integral-field-unit Emission Mapping with the Keck Cosmic Web Imager*  
+Z. Lin & D. C. Martin 2026, *The Astronomical Journal*, 172, 127  
+https://doi.org/10.3847/1538-3881/ae84bd
 
 ---
 
